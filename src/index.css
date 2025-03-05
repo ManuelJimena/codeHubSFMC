@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos para los menús desplegables */
+.dropdown-menu {
+  @apply z-50;
+}
+
+/* Estilos para los overlays */
+.overlay {
+  @apply z-40;
+}
+
+/* Estilos para el contenido principal */
+.main-content {
+  @apply z-0;
+}
