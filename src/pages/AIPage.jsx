@@ -256,6 +256,9 @@ const AIPage = () => {
                     <li>• Sintaxis y funciones de AMPscript</li>
                     <li>• Mejores prácticas en SFMC</li>
                   </ul>
+                  <p className="mt-4 text-orange-500 font-semibold">
+                    No compartas datos privados, sensibles o información de clientes en este chat.
+                  </p>
                 </div>
               ) : (
                 messages.map((message, index) => (

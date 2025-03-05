@@ -20,15 +20,22 @@ const Navbar = () => {
   // Cerrar menús al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (!event.target.closest('.user-menu') && !event.target.closest('.mobile-menu')) {
+      // Verificar si el clic fue en un enlace del menú móvil
+      const isMenuLink = event.target.closest('a');
+      const isMenuButton = event.target.closest('button');
+      
+      // Solo cerrar si no es un clic en un enlace o botón dentro del menú
+      if (!event.target.closest('.user-menu') && 
+          !event.target.closest('.mobile-menu') && 
+          !(mobileMenuOpen && (isMenuLink || isMenuButton))) {
         setUserMenuOpen(false);
         setMobileMenuOpen(false);
       }
     };
-
+  
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [mobileMenuOpen]); // Añade mobileMenuOpen como dependencia
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-sm">
