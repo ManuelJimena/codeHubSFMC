@@ -7,16 +7,9 @@ import toast from 'react-hot-toast';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark, atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { useTheme } from '../context/ThemeContext';
+import { getApiKeys } from '../lib/api-keys';
 
-const client = new OpenAI({
-  baseURL: import.meta.env.VITE_OPENROUTER_BASE_URL,
-  apiKey: import.meta.env.VITE_OPENROUTER_API_KEY,
-  dangerouslyAllowBrowser: true,
-  defaultHeaders: {
-    "HTTP-Referer": window.location.origin,
-    "X-Title": "codeHubSFMC"
-  }
-});
+let client = null;
 
 const CodeBlock = ({ code, language }) => {
   const { darkMode } = useTheme();
@@ -125,13 +118,41 @@ const AIPage = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const chatContainerRef = useRef(null);
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    const initializeClient = async () => {
+      if (!user) {
+        navigate('/login');
+        return;
+      }
+
+      try {
+        const keys = await getApiKeys();
+        if (!keys) {
+          toast.error('Error al obtener las claves de API');
+          return;
+        }
+
+        client = new OpenAI({
+          apiKey: keys.OPENROUTER_API_KEY,
+          baseURL: keys.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+          dangerouslyAllowBrowser: true,
+          defaultHeaders: {
+            'HTTP-Referer': window.location.origin,
+            'X-Title': 'codeHubSFMC'
+          }
+        });
+
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('Error initializing OpenAI client:', error);
+        toast.error('Error al inicializar el cliente de IA');
+      }
+    };
+
+    initializeClient();
     
     const getGreeting = () => {
       const hour = new Date().getHours();
@@ -155,7 +176,7 @@ const AIPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !isInitialized) return;
 
     const userMessage = input.trim();
     setInput('');
@@ -282,11 +303,11 @@ const AIPage = () => {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Escribe tu pregunta..."
                 className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                disabled={isLoading}
+                disabled={isLoading || !isInitialized}
               />
               <button 
                 type="submit"
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || !input.trim() || !isInitialized}
                 className="px-4 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="h-5 w-5" />

@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Users, Code, Settings, Shield } from 'lucide-react';
+import { Users, Code, Settings, Shield, Key } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminPage = () => {
   const [users, setUsers] = useState([]);
   const [snippets, setSnippets] = useState([]);
+  const [apiKeys, setApiKeys] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('users');
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyValue, setNewKeyValue] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -17,6 +20,8 @@ const AdminPage = () => {
       fetchUsers();
     } else if (activeTab === 'snippets') {
       fetchSnippets();
+    } else if (activeTab === 'api-keys') {
+      fetchApiKeys();
     }
   }, [activeTab]);
 
@@ -75,6 +80,22 @@ const AdminPage = () => {
     setLoading(false);
   };
 
+  const fetchApiKeys = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('api_keys')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching API keys:', error);
+      toast.error('Error al cargar las claves API');
+    } else {
+      setApiKeys(data || []);
+    }
+    setLoading(false);
+  };
+
   const toggleUserAdmin = async (userId, currentStatus) => {
     const { error } = await supabase
       .from('profiles')
@@ -103,6 +124,49 @@ const AdminPage = () => {
       } else {
         toast.success('Fragmento eliminado correctamente');
         fetchSnippets();
+      }
+    }
+  };
+
+  const handleAddApiKey = async (e) => {
+    e.preventDefault();
+    
+    if (!newKeyName || !newKeyValue) {
+      toast.error('Por favor completa todos los campos');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('api_keys')
+      .insert([{
+        key_name: newKeyName,
+        key_value: newKeyValue
+      }]);
+
+    if (error) {
+      console.error('Error adding API key:', error);
+      toast.error('Error al añadir la clave API');
+    } else {
+      toast.success('Clave API añadida correctamente');
+      setNewKeyName('');
+      setNewKeyValue('');
+      fetchApiKeys();
+    }
+  };
+
+  const deleteApiKey = async (keyId) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar esta clave API?')) {
+      const { error } = await supabase
+        .from('api_keys')
+        .delete()
+        .eq('id', keyId);
+
+      if (error) {
+        console.error('Error deleting API key:', error);
+        toast.error('Error al eliminar la clave API');
+      } else {
+        toast.success('Clave API eliminada correctamente');
+        fetchApiKeys();
       }
     }
   };
@@ -140,6 +204,17 @@ const AdminPage = () => {
             >
               <Code className="h-5 w-5 mr-2" />
               Fragmentos
+            </button>
+            <button
+              onClick={() => setActiveTab('api-keys')}
+              className={`${
+                activeTab === 'api-keys'
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
+              } flex items-center w-1/4 py-4 px-1 border-b-2 font-medium text-sm focus:outline-none`}
+            >
+              <Key className="h-5 w-5 mr-2" />
+              Claves API
             </button>
             <button
               onClick={() => setActiveTab('settings')}
@@ -266,7 +341,7 @@ const AdminPage = () => {
                             <span className={`px-2 py-1 text-xs rounded-full ${
                               snippet.language === 'ssjs' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100' :
                               snippet.language === 'sql' ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100' :
-                              'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                              'bg-green-100 text-green -800 dark:bg-green-800 dark:text-green-100'
                             }`}>
                               {snippet.language.toUpperCase()}
                             </span>
@@ -294,6 +369,96 @@ const AdminPage = () => {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {activeTab === 'api-keys' && (
+                <div className="space-y-6">
+                  <form onSubmit={handleAddApiKey} className="space-y-4">
+                    <div>
+                      <label htmlFor="keyName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Nombre de la clave
+                      </label>
+                      <input
+                        type="text"
+                        id="keyName"
+                        value={newKeyName}
+                        onChange={(e) => setNewKeyName(e.target.value)}
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm dark:bg-gray-700 dark:text-gray-100"
+                        placeholder="Ej: OPENROUTER_API_KEY"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="keyValue" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Valor de la clave
+                      </label>
+                      <input
+                        type="text"
+                        id="keyValue"
+                        value={newKeyValue}
+                        onChange={(e) => setNewKeyValue(e.target.value)}
+                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm dark:bg-gray-700 dark:text-gray-100"
+                        placeholder="Ingresa el valor de la clave API"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+                    >
+                      Añadir clave API
+                    </button>
+                  </form>
+
+                  <div className="mt-6">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                      Claves API existentes
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead className="bg-gray-50 dark:bg-gray-900">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Nombre
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Valor
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Fecha de creación
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                              Acciones
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                          {apiKeys.map(key => (
+                            <tr key={key.id}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {key.key_name}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                <span className="font-mono">
+                                  {key.key_value.substring(0, 8)}...{key.key_value.substring(key.key_value.length - 8)}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {new Date(key.created_at).toLocaleDateString()}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                <button
+                                  onClick={() => deleteApiKey(key.id)}
+                                  className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                                >
+                                  Eliminar
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               )}
 
