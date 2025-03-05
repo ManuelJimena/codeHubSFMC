@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Heart, Copy, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { Heart, Copy, Edit, Trash2, ArrowLeft, Share2 } from 'lucide-react';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark, atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import toast from 'react-hot-toast';
@@ -136,6 +136,11 @@ const SnippetDetailPage = () => {
     
     navigator.clipboard.writeText(snippet.code);
     toast.success('Código copiado al portapapeles');
+  };
+
+  const handleShareSnippet = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success('URL copiada al portapapeles');
   };
 
   const handleDeleteSnippet = async () => {
@@ -306,6 +311,13 @@ const SnippetDetailPage = () => {
               >
                 <Heart className="h-5 w-5 mr-1" fill={isFavorite ? 'currentColor' : 'none'} />
                 <span>{snippet.votes}</span>
+              </button>
+              <button
+                onClick={handleShareSnippet}
+                className="flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <Share2 className="h-5 w-5 mr-1" />
+                <span>Compartir</span>
               </button>
             </div>
             

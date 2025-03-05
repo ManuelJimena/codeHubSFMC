@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Code, User as UserIcon, LogOut, Heart, Plus, Menu, X, Shield, Moon, Sun } from 'lucide-react';
+import { Code, User as UserIcon, LogOut, Heart, Plus, Menu, X, Shield, Moon, Sun, Bot } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -46,6 +46,12 @@ const Navbar = () => {
               <Link to="/" className="border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                 Explorar
               </Link>
+              {user && (
+                <Link to="/ai" className="border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                  <Bot className="h-4 w-4 mr-2" />
+                  IA SFMC
+                </Link>
+              )}
             </div>
           </div>
           
@@ -184,6 +190,14 @@ const Navbar = () => {
             
             {user ? (
               <>
+                <Link 
+                  to="/ai" 
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Bot className="h-5 w-5 mr-2" />
+                  IA SFMC
+                </Link>
                 <Link 
                   to="/create" 
                   className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"

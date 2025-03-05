@@ -11,6 +11,7 @@ import SnippetDetailPage from './pages/SnippetDetailPage';
 import FavoritesPage from './pages/FavoritesPage';
 import UserSnippetsPage from './pages/UserSnippetsPage';
 import AdminPage from './pages/AdminPage';
+import AIPage from './pages/AIPage';
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/my-snippets" element={<UserSnippetsPage />} />
             <Route path="/admin" element={<AdminPage />} />
+            <Route path="/ai" element={<AIPage />} />
           </Routes>
         </main>
         <Footer />

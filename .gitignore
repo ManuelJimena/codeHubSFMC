@@ -39,7 +39,3 @@ supabase/seed.sql
 
 # TypeScript
 *.tsbuildinfo
-
-# Windows ADS (Alternate Data Streams)
-*.Zone.Identifier
-*.identifier
