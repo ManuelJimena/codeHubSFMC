@@ -11,7 +11,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    storage: window.localStorage
   }
 });
 
@@ -25,14 +26,30 @@ export const uploadAvatar = async (file, userId) => {
 
     // Generate unique file name
     const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const fileName = `${userId}-${Date.now()}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
 
-    // Upload file
+    // Delete existing avatar if any
+    const { data: existingFiles } = await supabase.storage
+      .from('avatars')
+      .list('', {
+        limit: 1,
+        search: userId
+      });
+
+    if (existingFiles?.length > 0) {
+      await supabase.storage
+        .from('avatars')
+        .remove([`avatars/${existingFiles[0].name}`]);
+    }
+
+    // Upload new avatar
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(fileName, file, {
+      .upload(filePath, file, {
         cacheControl: '3600',
-        upsert: false
+        upsert: false,
+        contentType: file.type
       });
 
     if (uploadError) throw uploadError;
@@ -40,7 +57,7 @@ export const uploadAvatar = async (file, userId) => {
     // Get public URL
     const { data } = supabase.storage
       .from('avatars')
-      .getPublicUrl(fileName);
+      .getPublicUrl(filePath);
 
     return data.publicUrl;
   } catch (error) {
@@ -53,12 +70,12 @@ export const deleteAvatar = async (url) => {
   try {
     if (!url) return;
 
-    // Extract file name from URL
     const fileName = url.split('/').pop();
+    if (!fileName) return;
 
     const { error } = await supabase.storage
       .from('avatars')
-      .remove([fileName]);
+      .remove([`avatars/${fileName}`]);
 
     if (error) throw error;
   } catch (error) {
@@ -78,7 +95,7 @@ export const getCurrentUser = async () => {
       .from('profiles')
       .select('*')
       .eq('id', session.user.id)
-      .maybeSingle();
+      .single();
 
     if (profileError) throw profileError;
 
@@ -103,7 +120,6 @@ export const getCurrentUser = async () => {
       };
     }
 
-    // Return combined user data
     return {
       ...session.user,
       ...profile
@@ -119,9 +135,11 @@ export const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     
-    // Clear local storage and force reload
+    // Clear all local storage
     window.localStorage.clear();
-    window.location.reload();
+    
+    // Force page reload to clear any cached data
+    window.location.href = '/';
   } catch (error) {
     console.error('Error during sign out:', error);
     throw error;

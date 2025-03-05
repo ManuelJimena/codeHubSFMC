@@ -15,6 +15,26 @@ const CreateSnippetPage = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const validateInput = () => {
+    if (!title.trim()) {
+      toast.error('El título es obligatorio');
+      return false;
+    }
+    if (!code.trim()) {
+      toast.error('El código es obligatorio');
+      return false;
+    }
+    if (title.length > 100) {
+      toast.error('El título no puede tener más de 100 caracteres');
+      return false;
+    }
+    if (code.length > 10000) {
+      toast.error('El código no puede tener más de 10000 caracteres');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -24,22 +44,15 @@ const CreateSnippetPage = () => {
       return;
     }
 
-    if (!title.trim() || !code.trim()) {
-      toast.error('El título y el código son obligatorios');
-      return;
-    }
+    if (!validateInput()) return;
 
     setLoading(true);
 
     try {
-      // Verificar la conexión a Supabase
-      const { error: pingError } = await supabase.from('snippets').select('count').limit(1);
-      if (pingError) throw new Error('Error de conexión con la base de datos');
-
       // Crear el snippet
       const { data, error } = await supabase
         .from('snippets')
-        .insert({
+        .insert([{
           title: title.trim(),
           description: description.trim(),
           code: code.trim(),
@@ -47,18 +60,24 @@ const CreateSnippetPage = () => {
           is_public: isPublic,
           user_id: user.id,
           votes: 0
-        })
+        }])
         .select()
         .single();
 
-      if (error) throw error;
-      if (!data) throw new Error('No se pudo crear el fragmento de código');
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data) {
+        throw new Error('No se pudo crear el fragmento de código');
+      }
 
       toast.success('¡Fragmento de código creado exitosamente!');
       navigate(`/snippet/${data.id}`);
     } catch (error) {
       console.error('Error creating snippet:', error);
       toast.error(error.message || 'Error al crear el fragmento de código');
+    } finally {
       setLoading(false);
     }
   };
@@ -104,10 +123,14 @@ const CreateSnippetPage = () => {
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              maxLength={100}
               required
               className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Ej: Consulta SQL para obtener clientes activos"
             />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {title.length}/100 caracteres
+            </p>
           </div>
 
           <div>
@@ -150,9 +173,13 @@ const CreateSnippetPage = () => {
               onChange={(e) => setCode(e.target.value)}
               required
               rows={10}
+              maxLength={10000}
               className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm font-mono bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               placeholder="Pega tu código aquí..."
             />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {code.length}/10000 caracteres
+            </p>
           </div>
 
           <div className="flex items-center">
