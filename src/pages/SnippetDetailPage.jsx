@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Heart, Share2, Copy, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { Heart, Copy, Edit, Trash2, ArrowLeft } from 'lucide-react';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark, atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import toast from 'react-hot-toast';
@@ -12,24 +12,33 @@ const SnippetDetailPage = () => {
   const { id } = useParams();
   const [snippet, setSnippet] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isFavorite, setIsFavorite] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { darkMode } = useTheme();
 
   useEffect(() => {
-    fetchSnippet();
-  }, [id]);
+    const loadData = async () => {
+      try {
+        setError(null);
+        await Promise.all([
+          fetchSnippet(),
+          user && checkIfFavorite(id)
+        ]);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setError('Error al cargar los datos');
+        toast.error('Error al cargar los datos');
+      }
+    };
 
-  useEffect(() => {
-    if (user && snippet) {
-      checkIfFavorite(snippet.id);
+    if (id) {
+      loadData();
     }
-  }, [user, snippet]);
+  }, [id, user]);
 
   const fetchSnippet = async () => {
-    if (!id) return;
-
     try {
       const { data, error } = await supabase
         .from('snippets')
@@ -41,12 +50,10 @@ const SnippetDetailPage = () => {
         .single();
 
       if (error) throw error;
-      
       setSnippet(data);
     } catch (error) {
       console.error('Error fetching snippet:', error);
-      toast.error('Error al cargar el fragmento de código');
-      navigate('/');
+      throw new Error('Error al cargar el fragmento de código');
     } finally {
       setLoading(false);
     }
@@ -65,6 +72,7 @@ const SnippetDetailPage = () => {
       setIsFavorite(!!data);
     } catch (error) {
       console.error('Error checking favorite status:', error);
+      throw error;
     }
   };
 
@@ -139,17 +147,19 @@ const SnippetDetailPage = () => {
     }
     
     if (window.confirm('¿Estás seguro de que quieres eliminar este fragmento de código? Esta acción no se puede deshacer.')) {
-      const { error } = await supabase
-        .from('snippets')
-        .delete()
-        .eq('id', snippet.id);
-      
-      if (error) {
-        toast.error('Error al eliminar el fragmento de código');
-        console.error('Error deleting snippet:', error);
-      } else {
+      try {
+        const { error } = await supabase
+          .from('snippets')
+          .delete()
+          .eq('id', snippet.id);
+        
+        if (error) throw error;
+        
         toast.success('Fragmento de código eliminado exitosamente');
         navigate('/');
+      } catch (error) {
+        console.error('Error deleting snippet:', error);
+        toast.error('Error al eliminar el fragmento de código');
       }
     }
   };
@@ -188,11 +198,15 @@ const SnippetDetailPage = () => {
     );
   }
 
-  if (!snippet) {
+  if (error || !snippet) {
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Fragmento no encontrado</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">El fragmento de código que estás buscando no existe o ha sido eliminado.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          {error || 'Fragmento no encontrado'}
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          El fragmento de código que estás buscando no existe o ha sido eliminado.
+        </p>
         <Link to="/" className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Volver al inicio
@@ -211,7 +225,7 @@ const SnippetDetailPage = () => {
       </div>
       
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-         <div className="p-6">
+        <div className="p-6">
           <div className="flex justify-between items-start mb-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{snippet.title}</h1>
@@ -292,17 +306,6 @@ const SnippetDetailPage = () => {
               >
                 <Heart className="h-5 w-5 mr-1" fill={isFavorite ? 'currentColor' : 'none'} />
                 <span>{snippet.votes}</span>
-              </button>
-              <button 
-                onClick={() => {
-                  const url = window.location.href;
-                  navigator.clipboard.writeText(url);
-                  toast.success('Enlace copiado al portapapeles');
-                }}
-                className="flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <Share2 className="h-5 w-5 mr-1" />
-                <span>Compartir</span>
               </button>
             </div>
             

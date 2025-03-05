@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Code, User as UserIcon, LogOut, Heart, Plus, Menu, X, Shield } from 'lucide-react';
+import { Code, User as UserIcon, LogOut, Heart, Plus, Menu, X, Shield, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import ThemeToggle from './ThemeToggle';
+import { useTheme } from '../context/ThemeContext';
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
+  const { darkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     await signOut();
-    setUserMenuOpen(false);
+    setMobileMenuOpen(false);
     navigate('/');
   };
 
@@ -49,86 +50,106 @@ const Navbar = () => {
           </div>
           
           <div className="flex items-center">
-            {user ? (
-              <div className="hidden sm:flex items-center space-x-4">
-                <Link to="/create" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center">
-                  <Plus className="h-4 w-4 mr-1" />
-                  Crear
-                </Link>
-                <Link to="/favorites" className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white">
-                  <Heart className="h-6 w-6" />
-                </Link>
-                <div className="relative user-menu">
-                  <button
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center space-x-2 focus:outline-none"
-                  >
-                    {user.avatar_url ? (
-                      <img
-                        src={user.avatar_url}
-                        alt={user.username}
-                        className="h-8 w-8 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                        <UserIcon className="h-5 w-5 text-gray-500 dark:text-gray-300" />
-                      </div>
-                    )}
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{user.username}</span>
-                  </button>
+            <div className="hidden sm:flex items-center space-x-4">
+              {user ? (
+                <>
+                  <Link to="/create" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Crear
+                  </Link>
+                  <Link to="/favorites" className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white">
+                    <Heart className="h-6 w-6" />
+                  </Link>
+                  <div className="relative user-menu">
+                    <button
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                      className="flex items-center space-x-2 focus:outline-none"
+                    >
+                      {user.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt={user.username}
+                          className="h-8 w-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                          <UserIcon className="h-5 w-5 text-gray-500 dark:text-gray-300" />
+                        </div>
+                      )}
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{user.username}</span>
+                    </button>
 
-                  {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-50">
-                      <div className="py-1">
-                        <Link
-                          to="/profile"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          <UserIcon className="h-4 w-4 mr-2" />
-                          Perfil
-                        </Link>
-                        <Link
-                          to="/my-snippets"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
-                          onClick={() => setUserMenuOpen(false)}
-                        >
-                          <Code className="h-4 w-4 mr-2" />
-                          Mis fragmentos
-                        </Link>
-                        {user.is_admin && (
+                    {userMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 z-50">
+                        <div className="py-1">
                           <Link
-                            to="/admin"
+                            to="/profile"
                             className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
                             onClick={() => setUserMenuOpen(false)}
                           >
-                            <Shield className="h-4 w-4 mr-2" />
-                            Panel Admin
+                            <UserIcon className="h-4 w-4 mr-2" />
+                            Perfil
                           </Link>
-                        )}
-                        <ThemeToggle />
-                        <button
-                          onClick={handleLogout}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
-                        >
-                          <LogOut className="h-4 w-4 mr-2" />
-                          <span>Cerrar sesión</span>
-                        </button>
+                          <Link
+                            to="/my-snippets"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <Code className="h-4 w-4 mr-2" />
+                            Mis fragmentos
+                          </Link>
+                          {user.is_admin && (
+                            <Link
+                              to="/admin"
+                              className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                              onClick={() => setUserMenuOpen(false)}
+                            >
+                              <Shield className="h-4 w-4 mr-2" />
+                              Panel Admin
+                            </Link>
+                          )}
+                          <button
+                            onClick={() => {
+                              toggleTheme();
+                              setUserMenuOpen(false);
+                            }}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                          >
+                            {darkMode ? (
+                              <>
+                                <Sun className="h-4 w-4 mr-2" />
+                                Modo claro
+                              </>
+                            ) : (
+                              <>
+                                <Moon className="h-4 w-4 mr-2" />
+                                Modo oscuro
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600"
+                          >
+                            <LogOut className="h-4 w-4 mr-2" />
+                            <span>Cerrar sesión</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center space-x-4">
+                  <Link to="/login" className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white flex items-center">
+                    <span>Iniciar sesión</span>
+                  </Link>
+                  <Link to="/signup" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center">
+                    <span>Registrarse</span>
+                  </Link>
                 </div>
-              </div>
-            ) : (
-              <div className="hidden sm:flex items-center space-x-4">
-                <Link to="/login" className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-white flex items-center">
-                  <span>Iniciar sesión</span>
-                </Link>
-                <Link to="/signup" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center">
-                  <span>Registrarse</span>
-                </Link>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Mobile menu button */}
             <div className="sm:hidden">
@@ -154,9 +175,10 @@ const Navbar = () => {
           <div className="px-2 pt-2 pb-3 space-y-1">
             <Link 
               to="/" 
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+              className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
               onClick={() => setMobileMenuOpen(false)}
             >
+              <Code className="h-5 w-5 mr-2" />
               Explorar
             </Link>
             
@@ -164,39 +186,70 @@ const Navbar = () => {
               <>
                 <Link 
                   to="/create" 
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <Plus className="h-5 w-5 mr-2" />
                   Crear fragmento
                 </Link>
                 <Link 
                   to="/favorites" 
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <Heart className="h-5 w-5 mr-2" />
                   Favoritos
                 </Link>
                 <Link 
                   to="/profile" 
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <UserIcon className="h-5 w-5 mr-2" />
                   Perfil
+                </Link>
+                <Link 
+                  to="/my-snippets" 
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Code className="h-5 w-5 mr-2" />
+                  Mis fragmentos
                 </Link>
                 {user.is_admin && (
                   <Link 
                     to="/admin" 
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
                     onClick={() => setMobileMenuOpen(false)}
                   >
+                    <Shield className="h-5 w-5 mr-2" />
                     Panel Admin
                   </Link>
                 )}
-                <ThemeToggle />
+                <button
+                  onClick={() => {
+                    toggleTheme();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  {darkMode ? (
+                    <>
+                      <Sun className="h-5 w-5 mr-2" />
+                      Modo claro
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="h-5 w-5 mr-2" />
+                      Modo oscuro
+                    </>
+                  )}
+                </button>
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
+                  <LogOut className="h-5 w-5 mr-2" />
                   Cerrar sesión
                 </button>
               </>
@@ -204,18 +257,39 @@ const Navbar = () => {
               <>
                 <Link 
                   to="/login" 
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <LogOut className="h-5 w-5 mr-2" />
                   Iniciar sesión
                 </Link>
                 <Link 
                   to="/signup" 
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                  className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <UserIcon className="h-5 w-5 mr-2" />
                   Registrarse
                 </Link>
+                <button
+                  onClick={() => {
+                    toggleTheme();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700"
+                >
+                  {darkMode ? (
+                    <>
+                      <Sun className="h-5 w-5 mr-2" />
+                      Modo claro
+                    </>
+                  ) : (
+                    <>
+                      <Moon className="h-5 w-5 mr-2" />
+                      Modo oscuro
+                    </>
+                  )}
+                </button>
               </>
             )}
           </div>

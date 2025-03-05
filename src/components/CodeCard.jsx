@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Share2, Eye } from 'lucide-react';
+import { Heart, Eye } from 'lucide-react';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark, atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { useTheme } from '../context/ThemeContext';
@@ -90,10 +90,6 @@ const CodeCard = ({ snippet, onToggleFavorite, isFavorite = false }) => {
               <Eye className="h-4 w-4 mr-1" />
               <span>Ver</span>
             </Link>
-            <button className="flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300">
-              <Share2 className="h-4 w-4 mr-1" />
-              <span>Compartir</span>
-            </button>
           </div>
           
           {snippet.user && (
