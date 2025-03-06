@@ -6,7 +6,7 @@ Una plataforma moderna para compartir y gestionar fragmentos de código de Marke
 
 - 🔐 Autenticación de usuarios con email y contraseña
 - 💾 Guardar y compartir fragmentos de código (SSJS, SQL, AMPscript)
-- ❤️ Sistema de favoritos y votos
+- ❤️ Sistema de favoritos
 - 🌓 Modo claro/oscuro
 - 🔍 Búsqueda avanzada de fragmentos
 - 📱 Diseño responsive
@@ -52,9 +52,14 @@ npm install
 ```env
 VITE_SUPABASE_URL=tu-url-de-supabase
 VITE_SUPABASE_ANON_KEY=tu-clave-anonima-de-supabase
-VITE_OPENROUTER_API_KEY=tu-clave-api-openrouter
-VITE_OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 ```
+
+4. Configura las claves API en Supabase:
+   - Accede al panel de administración desde el usuario admin
+   - Ve a la sección "Claves API"
+   - Añade las siguientes claves:
+     - `OPENROUTER_API_KEY`: Tu clave de API de OpenRouter
+     - `OPENROUTER_BASE_URL`: URL base de OpenRouter (https://openrouter.ai/api/v1)
 
 4. Inicia el servidor de desarrollo:
 ```bash
@@ -73,13 +78,23 @@ src/
 │   ├── AuthContext    # Gestión de autenticación
 │   └── ThemeContext   # Gestión del tema
 ├── lib/           # Utilidades y configuraciones
-│   ├── supabase   # Cliente y funciones de Supabase
-│   └── api-keys   # Gestión de claves API
+│   ├── supabase.js    # Cliente y funciones de Supabase
+│   └── api-keys.js    # Gestión de claves API seguras
 ├── pages/         # Páginas de la aplicación
 └── types/         # Definiciones de tipos
 
 supabase/
 └── migrations/    # Migraciones de la base de datos
+
+## 🔑 Gestión de Claves API
+
+Las claves API se gestionan de forma segura a través de Supabase:
+
+1. Las claves se almacenan en la tabla `api_keys`
+2. Solo los administradores pueden gestionar las claves
+3. Los usuarios autenticados pueden leer las claves
+4. Implementa Row Level Security (RLS) para protección adicional
+
 ```
 
 ## 📜 Scripts Disponibles
