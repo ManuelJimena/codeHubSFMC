@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
 
 const AuthRedirectMiddleware = () => {
   const location = useLocation();
@@ -8,22 +9,31 @@ const AuthRedirectMiddleware = () => {
   
   useEffect(() => {
     const handleAuthRedirect = async () => {
-      const params = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = params.get('access_token');
-      const type = params.get('type');
-      
-      if (accessToken && type === 'recovery') {
+      // Check if we have a hash with auth parameters
+      if (window.location.hash && window.location.hash.includes('access_token')) {
         try {
-          // Set the access token in the session
-          await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: params.get('refresh_token')
-          });
+          // Parse the hash string into an object
+          const hashParams = Object.fromEntries(
+            new URLSearchParams(window.location.hash.substring(1))
+          );
+
+          if (hashParams.type === 'recovery') {
+            // Set the session with the tokens
+            const { error } = await supabase.auth.setSession({
+              access_token: hashParams.access_token,
+              refresh_token: hashParams.refresh_token
+            });
+
+            if (error) throw error;
           
-          // Redirect to update password page
-          navigate('/update-password?type=recovery');
+            // Clear the hash and redirect
+            window.location.hash = '';
+            navigate('/update-password?type=recovery');
+            toast.success('Por favor, establece tu nueva contraseña');
+          }
         } catch (error) {
           console.error('Error handling auth redirect:', error);
+          toast.error('Error al procesar el enlace de recuperación');
           navigate('/login');
         }
       }
