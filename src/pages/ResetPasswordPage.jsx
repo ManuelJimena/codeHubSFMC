@@ -14,17 +14,27 @@ function ResetPasswordPage() {
     setLoading(true);
 
     try {
+      console.log('Iniciando proceso de recuperación de contraseña');
+      
       // Usamos la URL principal del sitio para que Supabase genere correctamente el enlace
-      const redirectUrl = `${window.location.origin}`;
+      // Añadimos el parámetro type=recovery para identificar que es un restablecimiento de contraseña
+      const redirectUrl = `${window.location.origin}?type=recovery`;
+      
+      console.log('URL de redirección:', redirectUrl);
+      console.log('Enviando correo a:', email);
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error de Supabase al resetear contraseña:', error);
+        throw error;
+      }
       
+      console.log('Correo de recuperación enviado correctamente');
       setSent(true);
-      toast.success('Se ha enviado un enlace a tu correo electrónico');
+      toast.success('Se ha enviado un enlace a tu correo electrónico', { duration: 5000 });
     } catch (error) {
       console.error('Error sending reset password email:', error);
       toast.error(error.message || 'Error al enviar el correo de recuperación');

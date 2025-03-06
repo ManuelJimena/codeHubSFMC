@@ -12,9 +12,77 @@ const AuthRedirectMiddleware = () => {
   useEffect(() => {
     console.log('URL actual:', window.location.href);
     console.log('Hash de URL:', window.location.hash);
+    console.log('Search de URL:', window.location.search);
     console.log('AuthRedirectMiddleware se ha montado/actualizado');
   }, [location]);
   
+  // Manejar flujo PKCE (con parámetro code en la URL)
+  useEffect(() => {
+    const handlePKCEFlow = async () => {
+      // Evitar procesamiento duplicado
+      if (isProcessing) return;
+      
+      try {
+        // Verificar si tenemos un parámetro 'code' en la URL (flujo PKCE)
+        const searchParams = new URLSearchParams(window.location.search);
+        const code = searchParams.get('code');
+        
+        if (code) {
+          setIsProcessing(true);
+          console.log('Detectado código de autorización en URL (flujo PKCE):', code);
+          
+          // Intentar intercambiar el código por una sesión (automáticamente manejado por supabase)
+          // No necesitamos hacer nada aquí, solo esperar a que la sesión se establezca
+          
+          // Verificar si tenemos una sesión válida
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) {
+            console.error('Error al obtener sesión después del flujo PKCE:', sessionError);
+            throw sessionError;
+          }
+          
+          if (!session) {
+            console.log('No se pudo establecer una sesión con el código proporcionado');
+            throw new Error('No se pudo establecer una sesión con el código proporcionado');
+          }
+          
+          console.log('Sesión establecida correctamente mediante flujo PKCE para:', session.user.email);
+          
+          // Limpiar la URL
+          window.history.replaceState(null, document.title, window.location.pathname);
+          console.log('Parámetros de URL limpiados');
+          
+          // Si venimos de un enlace de recuperación, redirigir a la página de actualización de contraseña
+          const type = searchParams.get('type');
+          
+          if (type === 'recovery') {
+            console.log('Flujo de recuperación de contraseña detectado');
+            navigate('/update-password', { replace: true });
+            toast.success('Por favor, establece tu nueva contraseña', { duration: 5000 });
+          } else {
+            // Es un inicio de sesión regular, redirigir a la página principal
+            navigate('/', { replace: true });
+            toast.success('Sesión iniciada correctamente', { duration: 3000 });
+          }
+        }
+      } catch (error) {
+        console.error('Error procesando el flujo PKCE:', error);
+        toast.error('Error al procesar la autenticación: ' + error.message);
+        navigate('/login');
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+    
+    // Ejecutar la función de detección solo si hay un parámetro 'code' y no estamos procesando ya
+    if (window.location.search.includes('code=') && !isProcessing) {
+      console.log('Ejecutando manejo de flujo PKCE');
+      handlePKCEFlow();
+    }
+  }, [navigate, location, isProcessing]);
+  
+  // Manejar flujo hash (con hash en la URL - método anterior)
   useEffect(() => {
     // Función para detectar y manejar el hash de recuperación
     const detectAndHandleRecoveryHash = async () => {
@@ -28,7 +96,7 @@ const AuthRedirectMiddleware = () => {
         
         if (hash && hash.includes('access_token') && hash.includes('type=recovery')) {
           setIsProcessing(true);
-          console.log('¡Detectado enlace de recuperación de contraseña!');
+          console.log('¡Detectado enlace de recuperación de contraseña (método hash)!');
           
           // Extraer los parámetros del hash
           const hashParams = new URLSearchParams(hash.substring(1));
@@ -63,8 +131,6 @@ const AuthRedirectMiddleware = () => {
           navigate('/update-password', { replace: true });
           
           toast.success('Por favor, establece tu nueva contraseña', { duration: 5000 });
-        } else {
-          console.log('No se detectó un hash de recuperación en esta URL');
         }
       } catch (error) {
         console.error('Error procesando la recuperación de contraseña:', error);

@@ -20,11 +20,11 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      // Desactivamos la detección automática para manejarla manualmente
-      // así podemos controlar mejor el flujo de restablecimiento de contraseña
-      detectSessionInUrl: false,
+      // Habilitamos la detección automática para facilitar el flujo PKCE
+      detectSessionInUrl: true,
       storage: window.localStorage,
-      flowType: 'pkce' // Usar PKCE para mayor seguridad en OAuth
+      flowType: 'pkce', // Usar PKCE para mayor seguridad en OAuth
+      debug: import.meta.env.DEV // Habilitar registro de debug en desarrollo
     }
   }
 );
