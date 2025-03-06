@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Transiciones suaves para cambios de tema */
+  * {
+    @apply transition-colors duration-500 ease-in-out;
+  }
+  
+  /* Transición específica para el fondo del body */
+  body {
+    @apply transition-colors duration-700 ease-in-out;
+  }
+  
+  /* Transiciones específicas para elementos con background */
+  .bg-white, .bg-gray-50, .bg-gray-100, .bg-gray-200, .bg-gray-700, .bg-gray-800, .bg-gray-900 {
+    @apply transition-colors duration-700 ease-in-out;
+  }
+  
+  /* Transición específica para el navbar */
+  nav {
+    @apply transition-colors duration-700 ease-in-out;
+  }
+}
+
 /* Estilos para los menús desplegables */
 .dropdown-menu {
   @apply z-50;
