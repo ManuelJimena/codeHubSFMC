@@ -14,18 +14,25 @@ const UpdatePasswordPage = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Verifica si es una recuperación de contraseña
+        // Verifica los parámetros de la URL
         const params = new URLSearchParams(location.search);
-        const isRecovery = params.get('type') === 'recovery';
+        const isRecoverySource = params.get('source') === 'recovery';
         
         // Verifica si hay una sesión activa
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (!isRecovery || !session) {
-          console.log('No es una recuperación válida o no hay sesión', { isRecovery, hasSession: !!session });
-          navigate('/login');
-          toast.error('Enlace de recuperación no válido o expirado');
+        // Si llegamos desde un enlace de recuperación de contraseña (sin sesión aún)
+        // o si ya tenemos una sesión activa con el parámetro correcto
+        if (isRecoverySource || session) {
+          console.log('Flujo de recuperación de contraseña válido');
+          // Es válido, permitir continuar
+          return;
         }
+        
+        // Si no es ninguno de los casos válidos, redirigir al login
+        console.log('No es una recuperación válida o no hay sesión');
+        navigate('/login');
+        toast.error('Enlace de recuperación no válido o expirado');
       } catch (error) {
         console.error('Error checking session:', error);
         navigate('/login');
@@ -52,10 +59,31 @@ const UpdatePasswordPage = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.updateUser({
-        password: password
-      });
-
+      // Verificar si hay un token de recuperación en la URL
+      const params = new URLSearchParams(location.search);
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      
+      let updateResult;
+      
+      // Si estamos utilizando el flujo con token en la URL
+      if (token) {
+        console.log('Actualizando contraseña con token de URL');
+        // Usar el método de recuperación de contraseña con el token
+        updateResult = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: 'recovery',
+          new_password: password
+        });
+      } else {
+        console.log('Actualizando contraseña con sesión activa');
+        // Método normal para usuarios ya autenticados
+        updateResult = await supabase.auth.updateUser({
+          password: password
+        });
+      }
+      
+      const { error } = updateResult;
       if (error) throw error;
 
       // Cerrar sesión después de actualizar la contraseña para garantizar un estado limpio
@@ -65,6 +93,9 @@ const UpdatePasswordPage = () => {
       window.localStorage.clear();
       
       toast.success('Contraseña actualizada correctamente');
+      
+      // Limpiar la URL
+      window.history.replaceState(null, '', '/update-password');
       
       // Pequeña espera antes de redirigir para asegurar que la sesión se haya cerrado
       setTimeout(() => {
