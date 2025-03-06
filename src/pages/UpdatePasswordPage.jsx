@@ -13,8 +13,10 @@ const UpdatePasswordPage = () => {
   useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      const hash = window.location.hash;
       
-      if (!session) {
+      // Verificar si hay una sesión válida y si estamos en un flujo de recuperación
+      if (!session || (!hash.includes('access_token') && !hash.includes('type=recovery'))) {
         navigate('/login');
         toast.error('Enlace de recuperación no válido o expirado');
       }

@@ -7,11 +7,23 @@ const AuthRedirectMiddleware = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    const handleAuthRedirect = () => {
-      // Si la URL contiene un token de acceso y es de tipo recovery
-      if (location.hash.includes('access_token') && location.hash.includes('type=recovery')) {
-        // Redirigir a la página de actualización de contraseña
-        navigate('/update-password');
+    const handleAuthRedirect = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const hash = window.location.hash;
+      
+      if (hash.includes('access_token') && (hash.includes('type=recovery') || params.get('type') === 'recovery')) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (session) {
+            navigate('/update-password');
+          } else {
+            navigate('/login');
+          }
+        } catch (error) {
+          console.error('Error handling auth redirect:', error);
+          navigate('/login');
+        }
       }
     };
 
