@@ -1,5 +1,6 @@
 import React from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import AuthRedirectMiddleware from './components/AuthRedirectMiddleware';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import HomePage from './pages/HomePage';
@@ -20,6 +21,7 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+        <AuthRedirectMiddleware />
         <Navbar />
         <main className="flex-grow">
           <Routes>

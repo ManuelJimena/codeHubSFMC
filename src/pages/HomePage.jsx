@@ -1,5 +1,6 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { Code, Save, Share2, Star, Bot, Heart } from 'lucide-react';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
@@ -7,6 +8,22 @@ import { useTheme } from '../context/ThemeContext';
 
 const HomePage = () => {
   const { darkMode } = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleAuthRedirect = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const params = new URLSearchParams(location.search);
+      const isRecovery = params.get('type') === 'recovery';
+
+      if (session && isRecovery) {
+        navigate('/update-password?type=recovery');
+      }
+    };
+
+    handleAuthRedirect();
+  }, [navigate, location]);
   const codeExample = `/* Ejemplo de SSJS */
 // Obtener datos de una Data Extension
 Platform.Load("Core", "1.1.1");
