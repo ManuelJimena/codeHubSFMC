@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import toast from 'react-hot-toast';
 
 const AuthRedirectMiddleware = () => {
   const location = useLocation();
@@ -9,23 +8,23 @@ const AuthRedirectMiddleware = () => {
   
   useEffect(() => {
     const handleAuthRedirect = async () => {
-      const hash = window.location.hash;
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = params.get('access_token');
+      const type = params.get('type');
       
-      if (hash.includes('access_token') && hash.includes('type=recovery')) {
+      if (accessToken && type === 'recovery') {
         try {
-          const { data: { session } } = await supabase.auth.getSession();
+          // Set the access token in the session
+          await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: params.get('refresh_token')
+          });
           
-          if (session) {
-            navigate('/update-password?type=recovery');
-            toast.success('Por favor, establece tu nueva contraseña');
-          } else {
-            navigate('/login');
-            toast.error('Sesión no válida');
-          }
+          // Redirect to update password page
+          navigate('/update-password?type=recovery');
         } catch (error) {
           console.error('Error handling auth redirect:', error);
           navigate('/login');
-          toast.error('Error al procesar la autenticación');
         }
       }
     };

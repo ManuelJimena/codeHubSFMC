@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const UpdatePasswordPage = () => {
+  const location = useLocation();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -12,18 +13,23 @@ const UpdatePasswordPage = () => {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      const hash = window.location.hash;
-      
-      // Verificar si hay una sesión válida y si estamos en un flujo de recuperación
-      if (!session || (!hash.includes('access_token') && !hash.includes('type=recovery'))) {
+      try {
+        const params = new URLSearchParams(location.search);
+        const isRecovery = params.get('type') === 'recovery';
+        
+        if (!isRecovery) {
+          navigate('/login');
+          toast.error('Enlace de recuperación no válido o expirado');
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
         navigate('/login');
-        toast.error('Enlace de recuperación no válido o expirado');
+        toast.error('Error al verificar la sesión');
       }
     };
 
     checkSession();
-  }, [navigate]);
+  }, [navigate, location]);
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
@@ -41,12 +47,15 @@ const UpdatePasswordPage = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { data, error } = await supabase.auth.updateUser({
         password: password
       });
 
       if (error) throw error;
 
+      // Sign out after password update to ensure clean state
+      await supabase.auth.signOut();
+      
       toast.success('Contraseña actualizada correctamente');
       navigate('/login');
     } catch (error) {
@@ -136,4 +145,4 @@ const UpdatePasswordPage = () => {
   );
 };
 
-export default UpdatePasswordPage
+export default UpdatePasswordPage;
