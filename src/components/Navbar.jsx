@@ -1,15 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Code, User as UserIcon, LogOut, Heart, Plus, Menu, X, Shield, Moon, Sun, Bot } from 'lucide-react';
+import { Code, User as UserIcon, LogOut, Heart, Plus, Menu, X, Shield, Moon, Sun, Bot, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import toast from 'react-hot-toast';
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, signOut } = useAuth();
+  const { user, signOut, refreshUser } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
+  
+  // Función para forzar actualización de la sesión
+  const handleForceRefresh = async () => {
+    try {
+      toast.loading('Actualizando sesión...', { id: 'refresh' });
+      await refreshUser();
+      toast.success('Sesión actualizada', { id: 'refresh' });
+    } catch (error) {
+      console.error('Error al actualizar sesión:', error);
+      toast.error('Error al actualizar', { id: 'refresh' });
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();

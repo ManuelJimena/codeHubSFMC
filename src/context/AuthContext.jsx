@@ -31,18 +31,47 @@ export const AuthProvider = ({ children }) => {
 
   // Initial session check
   useEffect(() => {
+    let isMounted = true;
+    
     const initAuth = async () => {
       try {
-        await refreshUser();
+        console.log('Iniciando autenticación...');
+        const currentUser = await refreshUser();
+        console.log('Estado de usuario:', currentUser ? 'Autenticado' : 'No autenticado');
+        
+        // Solo actualizar el estado si el componente sigue montado
+        if (isMounted) {
+          setLoading(false);
+          setInitialized(true);
+          console.log('Inicialización de AuthContext completada');
+        }
       } catch (error) {
         console.error('Error initializing auth:', error);
-      } finally {
-        setLoading(false);
-        setInitialized(true);
+        // Incluso en caso de error, debemos marcar como inicializado
+        if (isMounted) {
+          setLoading(false);
+          setInitialized(true);
+          console.log('Inicialización de AuthContext completada con errores');
+        }
       }
     };
 
+    // Configurar un tiempo máximo para la inicialización
+    const timeoutId = setTimeout(() => {
+      if (!initialized && isMounted) {
+        console.warn('La inicialización está tardando demasiado, forzando renderizado');
+        setLoading(false);
+        setInitialized(true);
+      }
+    }, 3000); // 3 segundos máximo para inicializar
+
     initAuth();
+
+    // Limpieza
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // Auth state change listener
@@ -90,9 +119,18 @@ export const AuthProvider = ({ children }) => {
     isAdmin: user?.is_admin || false
   };
 
+  // Agregar un fallback para mostrar contenido mientras se inicializa
+  if (!initialized) {
+    console.log('AuthContext aún no está inicializado');
+  }
+
   return (
     <AuthContext.Provider value={value}>
-      {initialized ? children : null}
+      {initialized ? children : (
+        <div className="flex items-center justify-center h-screen">
+          <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 };

@@ -1,51 +1,67 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import AuthRedirectMiddleware from './components/AuthRedirectMiddleware';
+import ErrorBoundary from './components/ErrorBoundary';
+import DebugInfo from './components/DebugInfo';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import HomePage from './pages/HomePage';
-import ExplorePage from './pages/ExplorePage';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import ProfilePage from './pages/ProfilePage';
-import CreateSnippetPage from './pages/CreateSnippetPage';
-import SnippetDetailPage from './pages/SnippetDetailPage';
-import FavoritesPage from './pages/FavoritesPage';
-import UserSnippetsPage from './pages/UserSnippetsPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import UpdatePasswordPage from './pages/UpdatePasswordPage';
-import AdminPage from './pages/AdminPage';
-import AIPage from './pages/AIPage';
+
+// Importación con lazy para mejor rendimiento y manejo de errores
+const HomePage = lazy(() => import('./pages/HomePage'));
+const ExplorePage = lazy(() => import('./pages/ExplorePage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SignupPage = lazy(() => import('./pages/SignupPage')); 
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const CreateSnippetPage = lazy(() => import('./pages/CreateSnippetPage'));
+const SnippetDetailPage = lazy(() => import('./pages/SnippetDetailPage'));
+const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
+const UserSnippetsPage = lazy(() => import('./pages/UserSnippetsPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
+const AIPage = lazy(() => import('./pages/AIPage'));
+
+// Componente de carga
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-screen">
+    <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
+  </div>
+);
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-        <AuthRedirectMiddleware />
-        <Navbar />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/explore" element={<ExplorePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/create" element={<CreateSnippetPage />} />
-            <Route path="/snippet/:id" element={<SnippetDetailPage />} />
-            <Route path="/favorites" element={<FavoritesPage />} />
-            <Route path="/my-snippets" element={<UserSnippetsPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/update-password" element={<UpdatePasswordPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="/ai" element={<AIPage />} />
-            
-            {/* Crear esta ruta especial para el hash de recuperación de contraseña */}
-            <Route path="/#access_token=:rest" element={<UpdatePasswordPage />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+          <AuthRedirectMiddleware />
+          <Navbar />
+          <main className="flex-grow">
+            <ErrorBoundary>
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/explore" element={<ExplorePage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/create" element={<CreateSnippetPage />} />
+                  <Route path="/snippet/:id" element={<SnippetDetailPage />} />
+                  <Route path="/favorites" element={<FavoritesPage />} />
+                  <Route path="/my-snippets" element={<UserSnippetsPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
+                  <Route path="/update-password" element={<UpdatePasswordPage />} />
+                  <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/ai" element={<AIPage />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
+          </main>
+          <Footer />
+          {/* Componente de depuración siempre visible */}
+          <DebugInfo />
+        </div>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

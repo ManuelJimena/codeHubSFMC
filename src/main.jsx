@@ -5,46 +5,12 @@ import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
 import './index.css';
-import { supabase } from './lib/supabase';
 import toast from 'react-hot-toast';
 
-// Función para manejar hash de recuperación de contraseña antes de cargar el resto de la aplicación
-const handlePasswordRecoveryFlow = async () => {
-  // Verificar si hay un hash de recuperación en la URL
-  if (window.location.hash && window.location.hash.includes('access_token') && window.location.hash.includes('type=recovery')) {
-    console.log('Interceptando hash de recuperación de contraseña desde main.jsx');
-    
-    try {
-      // Extraer parámetros del hash
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const refreshToken = hashParams.get('refresh_token');
-      
-      // Establecer la sesión
-      const { error } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      });
-      
-      if (error) throw error;
-      
-      // Limpiar el hash y redirigir
-      window.location.href = '/update-password';
-      return true; // Indicar que hemos manejado el hash
-    } catch (error) {
-      console.error('Error al procesar el enlace de recuperación:', error);
-      // Limpia el hash y continua normalmente
-      window.location.href = '/login?error=recovery';
-      return true;
-    }
-  }
-  
-  return false; // Indicar que no hay hash o no se ha manejado
-};
+// Renderizar directamente la aplicación - el manejo del hash se hace en AuthRedirectMiddleware
+console.log('Iniciando la aplicación...');
 
-// Verificar primero si hay un hash de recuperación
-if (!handlePasswordRecoveryFlow()) {
-  // Continuar con la renderización normal si no hay hash o no se ha manejado
+try {
   createRoot(document.getElementById('root')).render(
     <StrictMode>
       <AuthProvider>
@@ -64,4 +30,20 @@ if (!handlePasswordRecoveryFlow()) {
       </AuthProvider>
     </StrictMode>
   );
+  console.log('App renderizada correctamente');
+} catch (error) {
+  console.error('Error al renderizar la aplicación:', error);
+  // Si hay un error en la renderización, mostramos un mensaje en el DOM directamente
+  document.body.innerHTML = `
+    <div style="font-family: system-ui; padding: 2rem; text-align: center;">
+      <h1>Error al cargar la aplicación</h1>
+      <p>Ha ocurrido un problema al inicializar la aplicación. Por favor, recarga la página o contacta con soporte.</p>
+      <pre style="background: #f5f5f5; padding: 1rem; border-radius: 4px; text-align: left; overflow: auto;">
+        ${error.message}
+      </pre>
+      <button onclick="location.reload()" style="padding: 0.5rem 1rem; background: blue; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem;">
+        Reintentar
+      </button>
+    </div>
+  `;
 }
