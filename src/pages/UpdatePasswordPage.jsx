@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -8,33 +8,41 @@ const UpdatePasswordPage = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const [sessionValid, setSessionValid] = useState(false);
   const navigate = useNavigate();
 
+  // Verificar sesión al cargar
   useEffect(() => {
-    const checkSession = async () => {
+    const checkSessionAndUpdate = async () => {
       try {
-        // Verificar si hay una sesión activa
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
           console.log('No hay sesión activa para actualizar contraseña');
+          toast.error('Por favor, utiliza un enlace de recuperación válido');
           navigate('/login', { replace: true });
-          toast.error('Por favor, inicia sesión o usa un enlace de recuperación válido');
           return;
         }
         
-        // Si hay una sesión, permitir actualizar contraseña
-        console.log('Sesión activa para actualizar contraseña');
-        setSessionChecked(true);
+        console.log('Sesión válida para actualizar contraseña');
+        setSessionValid(true);
+        
+        // Asegurar que estamos en la página de updatePassword sin parámetros adicionales
+        // (esto evita problemas con hashes y parámetros de URL)
+        if (window.location.search || window.location.hash) {
+          window.history.replaceState(null, document.title, '/update-password');
+        }
+        
+        // Mostrar mensaje de ayuda
+        toast.success('Por favor, establece tu nueva contraseña');
       } catch (error) {
         console.error('Error verificando sesión:', error);
-        navigate('/login', { replace: true });
         toast.error('Ha ocurrido un error. Por favor, intenta de nuevo');
+        navigate('/login', { replace: true });
       }
     };
-
-    checkSession();
+    
+    checkSessionAndUpdate();
   }, [navigate]);
 
   const handleUpdatePassword = async (e) => {
@@ -59,19 +67,20 @@ const UpdatePasswordPage = () => {
       });
       
       if (error) throw error;
-
-      // Cerrar sesión
-      await supabase.auth.signOut();
-      window.localStorage.clear();
       
       toast.success('Contraseña actualizada correctamente');
       
-      // Redirigir al login
-      navigate('/login', { replace: true });
+      // Cerrar sesión de manera segura
+      await supabase.auth.signOut();
+      window.localStorage.clear();
+      
+      // Redirigir al login después de un breve retraso
+      setTimeout(() => {
+        window.location.href = '/login'; // Usar window.location en lugar de navigate para forzar recarga completa
+      }, 1000);
     } catch (error) {
       console.error('Error al actualizar contraseña:', error);
       toast.error(error.message || 'Error al actualizar la contraseña');
-    } finally {
       setLoading(false);
     }
   };

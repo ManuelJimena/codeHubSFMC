@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { LogIn } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -10,7 +10,31 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { refreshUser } = useAuth();
+  
+  // Verificar si viene de un error de recuperación
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.has('error') && params.get('error') === 'recovery') {
+      toast.error('Error al procesar el enlace de recuperación de contraseña');
+    }
+    
+    // Verificar si hay una sesión activa no deseada (de un enlace de recuperación fallido)
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log('Sesión activa detectada en LoginPage, limpiando...');
+        // Si estamos en la página de login pero hay una sesión activa, es probable que sea
+        // resultado de un enlace de recuperación que no completó el flujo correctamente.
+        // Cerramos la sesión para limpiar el estado.
+        await supabase.auth.signOut();
+        window.localStorage.clear();
+      }
+    };
+    
+    checkSession();
+  }, [location]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
