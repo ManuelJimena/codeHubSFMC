@@ -10,6 +10,8 @@ import CreateSnippetPage from './pages/CreateSnippetPage';
 import SnippetDetailPage from './pages/SnippetDetailPage';
 import FavoritesPage from './pages/FavoritesPage';
 import UserSnippetsPage from './pages/UserSnippetsPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import AdminPage from './pages/AdminPage';
 import AIPage from './pages/AIPage';
 
@@ -28,6 +30,8 @@ function App() {
             <Route path="/snippet/:id" element={<SnippetDetailPage />} />
             <Route path="/favorites" element={<FavoritesPage />} />
             <Route path="/my-snippets" element={<UserSnippetsPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/update-password" element={<UpdatePasswordPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/ai" element={<AIPage />} />
           </Routes>
