@@ -5,43 +5,37 @@ import { KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const UpdatePasswordPage = () => {
-  const location = useLocation();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Verifica los parámetros de la URL
-        const params = new URLSearchParams(location.search);
-        const isRecoverySource = params.get('source') === 'recovery';
-        
-        // Verifica si hay una sesión activa
+        // Verificar si hay una sesión activa
         const { data: { session } } = await supabase.auth.getSession();
         
-        // Si llegamos desde un enlace de recuperación de contraseña (sin sesión aún)
-        // o si ya tenemos una sesión activa con el parámetro correcto
-        if (isRecoverySource || session) {
-          console.log('Flujo de recuperación de contraseña válido');
-          // Es válido, permitir continuar
+        if (!session) {
+          console.log('No hay sesión activa para actualizar contraseña');
+          navigate('/login', { replace: true });
+          toast.error('Por favor, inicia sesión o usa un enlace de recuperación válido');
           return;
         }
         
-        // Si no es ninguno de los casos válidos, redirigir al login
-        console.log('No es una recuperación válida o no hay sesión');
-        navigate('/login');
-        toast.error('Enlace de recuperación no válido o expirado');
+        // Si hay una sesión, permitir actualizar contraseña
+        console.log('Sesión activa para actualizar contraseña');
+        setSessionChecked(true);
       } catch (error) {
-        console.error('Error checking session:', error);
-        navigate('/login');
-        toast.error('Error al verificar la sesión');
+        console.error('Error verificando sesión:', error);
+        navigate('/login', { replace: true });
+        toast.error('Ha ocurrido un error. Por favor, intenta de nuevo');
       }
     };
 
     checkSession();
-  }, [navigate, location]);
+  }, [navigate]);
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
@@ -59,50 +53,23 @@ const UpdatePasswordPage = () => {
     setLoading(true);
 
     try {
-      // Verificar si hay un token de recuperación en la URL
-      const params = new URLSearchParams(location.search);
-      const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token');
+      // Actualizar contraseña
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
       
-      let updateResult;
-      
-      // Si estamos utilizando el flujo con token en la URL
-      if (token) {
-        console.log('Actualizando contraseña con token de URL');
-        // Usar el método de recuperación de contraseña con el token
-        updateResult = await supabase.auth.verifyOtp({
-          token_hash: token,
-          type: 'recovery',
-          new_password: password
-        });
-      } else {
-        console.log('Actualizando contraseña con sesión activa');
-        // Método normal para usuarios ya autenticados
-        updateResult = await supabase.auth.updateUser({
-          password: password
-        });
-      }
-      
-      const { error } = updateResult;
       if (error) throw error;
 
-      // Cerrar sesión después de actualizar la contraseña para garantizar un estado limpio
+      // Cerrar sesión
       await supabase.auth.signOut();
-      
-      // Limpiar el almacenamiento local para forzar el cierre de sesión completo
       window.localStorage.clear();
       
       toast.success('Contraseña actualizada correctamente');
       
-      // Limpiar la URL
-      window.history.replaceState(null, '', '/update-password');
-      
-      // Pequeña espera antes de redirigir para asegurar que la sesión se haya cerrado
-      setTimeout(() => {
-        navigate('/login');
-      }, 500);
+      // Redirigir al login
+      navigate('/login', { replace: true });
     } catch (error) {
-      console.error('Error updating password:', error);
+      console.error('Error al actualizar contraseña:', error);
       toast.error(error.message || 'Error al actualizar la contraseña');
     } finally {
       setLoading(false);

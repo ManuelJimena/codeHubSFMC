@@ -38,6 +38,9 @@ function App() {
             <Route path="/update-password" element={<UpdatePasswordPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/ai" element={<AIPage />} />
+            
+            {/* Crear esta ruta especial para el hash de recuperación de contraseña */}
+            <Route path="/#access_token=:rest" element={<UpdatePasswordPage />} />
           </Routes>
         </main>
         <Footer />
