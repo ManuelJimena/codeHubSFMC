@@ -66,6 +66,7 @@ const UpdatePasswordPage = () => {
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
+    console.log('Formulario enviado para actualizar contraseña');
     
     if (password !== confirmPassword) {
       toast.error('Las contraseñas no coinciden');
@@ -82,30 +83,54 @@ const UpdatePasswordPage = () => {
     try {
       console.log('Intentando actualizar contraseña...');
       
-      // Verificar que tenemos una sesión activa antes de continuar
+      // Mostrar información sobre el estado actual de la sesión
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
+        console.error('Error al verificar sesión:', sessionError);
         throw sessionError;
       }
       
       if (!session) {
+        console.error('No hay sesión activa');
         throw new Error('No hay una sesión activa para actualizar la contraseña');
       }
       
-      console.log('Actualizando contraseña para usuario:', session.user.email);
-      
-      // Actualizar contraseña
-      const { data, error } = await supabase.auth.updateUser({
-        password: password
+      console.log('Sesión válida encontrada:', {
+        user: session.user.email,
+        expires_at: new Date(session.expires_at * 1000).toISOString(),
+        token_type: session.token_type,
+        auth_token_present: !!session.access_token
       });
       
-      if (error) {
-        console.error('Error en updateUser:', error);
-        throw error;
+      console.log('Actualizando contraseña con updateUser API...');
+      
+      // Usar la API directa de updateUser para mayor control
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/user`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apiKey': import.meta.env.VITE_SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({
+          password: password
+        })
+      });
+      
+      // Verificar la respuesta HTTP
+      console.log('Respuesta de API updateUser:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error en respuesta de updateUser:', errorData);
+        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
       
-      console.log('Contraseña actualizada correctamente:', !!data.user);
+      const data = await response.json();
+      console.log('Contraseña actualizada correctamente:', !!data);
+      
+      // Notificar éxito y preparar redirección
       toast.success('Contraseña actualizada correctamente', { duration: 5000 });
       
       // Cerrar sesión de manera segura
@@ -113,17 +138,21 @@ const UpdatePasswordPage = () => {
       await supabase.auth.signOut();
       window.localStorage.clear();
       
-      // Mostrar mensaje de éxito y redirigir
+      // Mostrar mensaje de redirección
       toast.success('Sesión cerrada. Redirigiendo al login...', { duration: 5000 });
       
-      // Redirigir al login después de un breve retraso
+      // Forzar una espera más larga antes de redirigir
+      console.log('Esperando para redirigir...');
+      
       setTimeout(() => {
         console.log('Redirigiendo a login...');
-        window.location.href = '/login'; // Usar window.location en lugar de navigate para forzar recarga completa
-      }, 2000);
+        // Forzar recarga completa de la página
+        window.location.href = '/login';
+      }, 3000);
     } catch (error) {
-      console.error('Error al actualizar contraseña:', error);
-      toast.error(error.message || 'Error al actualizar la contraseña', { duration: 8000 });
+      console.error('Error detallado al actualizar contraseña:', error);
+      toast.error(`Error: ${error.message || 'Error desconocido al actualizar la contraseña'}`, { duration: 8000 });
+    } finally {
       setLoading(false);
     }
   };
