@@ -20,8 +20,11 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true, // Cambiado a true para permitir la detección de tokens en la URL
-      storage: window.localStorage
+      // Desactivamos la detección automática para manejarla manualmente
+      // así podemos controlar mejor el flujo de restablecimiento de contraseña
+      detectSessionInUrl: false,
+      storage: window.localStorage,
+      flowType: 'pkce' // Usar PKCE para mayor seguridad en OAuth
     }
   }
 );

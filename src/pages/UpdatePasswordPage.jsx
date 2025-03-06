@@ -15,16 +15,22 @@ const UpdatePasswordPage = () => {
   useEffect(() => {
     const checkSessionAndUpdate = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Verificando sesión en UpdatePasswordPage');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error al obtener sesión:', error);
+          throw error;
+        }
         
         if (!session) {
           console.log('No hay sesión activa para actualizar contraseña');
-          toast.error('Por favor, utiliza un enlace de recuperación válido');
+          toast.error('Por favor, utiliza un enlace de recuperación válido', { duration: 5000 });
           navigate('/login', { replace: true });
           return;
         }
         
-        console.log('Sesión válida para actualizar contraseña');
+        console.log('Sesión válida para actualizar contraseña:', session.user.email);
         setSessionValid(true);
         
         // Asegurar que estamos en la página de updatePassword sin parámetros adicionales
@@ -34,10 +40,23 @@ const UpdatePasswordPage = () => {
         }
         
         // Mostrar mensaje de ayuda
-        toast.success('Por favor, establece tu nueva contraseña');
+        toast.success('Por favor, establece tu nueva contraseña', { duration: 5000 });
+        
+        // Añadir un listener para detectar si el usuario intenta abandonar la página
+        const handleBeforeUnload = (e) => {
+          const message = "¿Estás seguro que deseas salir? No has actualizado tu contraseña.";
+          e.returnValue = message;
+          return message;
+        };
+        
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        
+        return () => {
+          window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
       } catch (error) {
         console.error('Error verificando sesión:', error);
-        toast.error('Ha ocurrido un error. Por favor, intenta de nuevo');
+        toast.error('Ha ocurrido un error. Por favor, intenta de nuevo', { duration: 5000 });
         navigate('/login', { replace: true });
       }
     };
@@ -61,26 +80,50 @@ const UpdatePasswordPage = () => {
     setLoading(true);
 
     try {
+      console.log('Intentando actualizar contraseña...');
+      
+      // Verificar que tenemos una sesión activa antes de continuar
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        throw sessionError;
+      }
+      
+      if (!session) {
+        throw new Error('No hay una sesión activa para actualizar la contraseña');
+      }
+      
+      console.log('Actualizando contraseña para usuario:', session.user.email);
+      
       // Actualizar contraseña
-      const { error } = await supabase.auth.updateUser({
+      const { data, error } = await supabase.auth.updateUser({
         password: password
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error en updateUser:', error);
+        throw error;
+      }
       
-      toast.success('Contraseña actualizada correctamente');
+      console.log('Contraseña actualizada correctamente:', !!data.user);
+      toast.success('Contraseña actualizada correctamente', { duration: 5000 });
       
       // Cerrar sesión de manera segura
+      console.log('Cerrando sesión...');
       await supabase.auth.signOut();
       window.localStorage.clear();
       
+      // Mostrar mensaje de éxito y redirigir
+      toast.success('Sesión cerrada. Redirigiendo al login...', { duration: 5000 });
+      
       // Redirigir al login después de un breve retraso
       setTimeout(() => {
+        console.log('Redirigiendo a login...');
         window.location.href = '/login'; // Usar window.location en lugar de navigate para forzar recarga completa
-      }, 1000);
+      }, 2000);
     } catch (error) {
       console.error('Error al actualizar contraseña:', error);
-      toast.error(error.message || 'Error al actualizar la contraseña');
+      toast.error(error.message || 'Error al actualizar la contraseña', { duration: 8000 });
       setLoading(false);
     }
   };
