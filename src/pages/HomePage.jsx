@@ -1,259 +1,210 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import CodeCard from '../components/CodeCard';
-import { Search } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import toast from 'react-hot-toast';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Code, Save, Share2, Star, Bot, Heart } from 'lucide-react';
+import SyntaxHighlighter from 'react-syntax-highlighter';
+import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import { useTheme } from '../context/ThemeContext';
 
 const HomePage = () => {
-  const { user } = useAuth();
-  const [snippets, setSnippets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedLanguage, setSelectedLanguage] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [favorites, setFavorites] = useState([]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setError(null);
-        await Promise.all([
-          fetchSnippets(),
-          user && fetchUserFavorites()
-        ]);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setError('Error al cargar los datos. Por favor, intenta de nuevo.');
-        toast.error('Error al cargar los datos');
-      }
-    };
-
-    loadData();
-  }, [selectedLanguage, user]);
-
-  const fetchSnippets = async () => {
-    try {
-      let query = supabase
-        .from('snippets')
-        .select(`
-          *,
-          user:profiles(username, avatar_url)
-        `)
-        .eq('is_public', true)
-        .order('created_at', { ascending: false });
-      
-      if (selectedLanguage !== 'all') {
-        query = query.eq('language', selectedLanguage);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      setSnippets(data || []);
-    } catch (error) {
-      console.error('Error fetching snippets:', error);
-      throw new Error('Error al cargar los fragmentos de código');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchUserFavorites = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('favorites')
-        .select('snippet_id')
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      
-      setFavorites(data?.map(fav => fav.snippet_id) || []);
-    } catch (error) {
-      console.error('Error fetching favorites:', error);
-      throw error;
-    }
-  };
-
-  const handleToggleFavorite = async (snippetId) => {
-    if (!user) {
-      toast.error('Debes iniciar sesión para añadir a favoritos');
-      return;
-    }
-    
-    try {
-      const isFavorite = favorites.includes(snippetId);
-      
-      if (isFavorite) {
-        // Remove from favorites
-        const { error } = await supabase
-          .from('favorites')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('snippet_id', snippetId);
-        
-        if (error) throw error;
-        
-        setFavorites(favorites.filter(id => id !== snippetId));
-        
-        // Decrement vote count
-        await supabase.rpc('decrement_votes', {
-          snippet_id: snippetId
-        });
-        
-        setSnippets(snippets.map(snippet => 
-          snippet.id === snippetId 
-            ? { ...snippet, votes: snippet.votes - 1 } 
-            : snippet
-        ));
-
-        toast.success('Eliminado de favoritos');
-      } else {
-        // Add to favorites
-        const { error } = await supabase
-          .from('favorites')
-          .insert({ user_id: user.id, snippet_id: snippetId });
-        
-        if (error) throw error;
-        
-        setFavorites([...favorites, snippetId]);
-        
-        // Increment vote count
-        await supabase.rpc('increment_votes', {
-          snippet_id: snippetId
-        });
-        
-        setSnippets(snippets.map(snippet => 
-          snippet.id === snippetId 
-            ? { ...snippet, votes: snippet.votes + 1 } 
-            : snippet
-        ));
-
-        toast.success('Añadido a favoritos');
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      toast.error('Error al actualizar favoritos');
-    }
-  };
-
-  const filteredSnippets = snippets.filter(snippet => 
-    snippet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    snippet.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const { darkMode } = useTheme();
+  const codeExample = `/* Ejemplo de SSJS */
+// Obtener datos de una Data Extension
+Platform.Load("Core", "1.1.1");
+var prox = Platform.Function.CreateObject("ProxyDE");
+Platform.Function.SetObjectProperty(prox, "Name", "MyDataExtension");
+var fields = Platform.Function.CreateObject("Fields");
+Platform.Function.AddObjectArrayItem(fields, "Field", "EmailAddress");
+Platform.Function.AddObjectArrayItem(fields, "Field", "FirstName");
+Platform.Function.SetObjectProperty(prox, "Fields", fields);
+var data = Platform.Function.InvokeRetrieve(prox);`;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="text-center mb-12">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-          Explora el Pinterest del Código
-        </h1>
-        <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300">
-          Descubre nuevos fragmentos guardados por la comunidad
-        </p>
-        
-        <div className="mt-8 max-w-3xl mx-auto">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="bg-white dark:bg-gray-900 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-6">
+              Guarda código que funciona
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+              Almacena y comparte fragmentos de código de Marketing Cloud que realmente funcionan. Deja de buscar cuando los necesites, ¡están todos aquí!
+            </p>
+            <div className="flex justify-center gap-4">
+              <Link
+                to="/explore"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Explorar Snippets
+              </Link>
+              <Link
+                to="/signup"
+                className="inline-flex items-center px-6 py-3 border border-gray-300 dark:border-gray-600 text-base font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                Crear Cuenta Gratis
+              </Link>
             </div>
-            <input
-              type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              placeholder="Buscar fragmentos de código..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
           </div>
         </div>
-      </div>
-      
-      <div className="mb-8 flex justify-center">
-        <div className="flex flex-wrap justify-center gap-2">
-          <button
-            className={`px-4 py-2 rounded-full text-sm font-medium ${
-              selectedLanguage === 'all'
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
-                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-            onClick={() => setSelectedLanguage('all')}
-          >
-            Todos
-          </button>
-          <button
-            className={`px-4 py-2 rounded-full text-sm font-medium ${
-              selectedLanguage === 'ssjs'
-                ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
-                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-            onClick={() => setSelectedLanguage('ssjs')}
-          >
-            SSJS
-          </button>
-          <button
-            className={`px-4 py-2 rounded-full text-sm font-medium ${
-              selectedLanguage === 'sql'
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
-                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-            onClick={() => setSelectedLanguage('sql')}
-          >
-            SQL
-          </button>
-          <button
-            className={`px-4 py-2 rounded-full text-sm font-medium ${
-              selectedLanguage === 'ampscript'
-                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-            onClick={() => setSelectedLanguage('ampscript')}
-          >
-            AMPscript
-          </button>
-        </div>
-      </div>
-      
-      {error ? (
-        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-          <p className="text-red-500 dark:text-red-400 text-lg mb-4">{error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-          >
-            Reintentar
-          </button>
-        </div>
-      ) : (
-        <>
-          {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-16 bg-gray-50 dark:bg-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
+            Guarda fragmentos de código
+          </h2>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-md">
+              <div className="text-blue-500 mb-4">
+                <Save className="h-8 w-8" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Guarda en la nube
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Almacena tus fragmentos en la nube y accede desde cualquier lugar
+              </p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredSnippets.length > 0 ? (
-                filteredSnippets.map(snippet => (
-                  <CodeCard
-                    key={snippet.id}
-                    snippet={snippet}
-                    onToggleFavorite={handleToggleFavorite}
-                    isFavorite={favorites.includes(snippet.id)}
-                  />
-                ))
-              ) : (
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
-                  <p className="text-gray-500 dark:text-gray-400 text-lg">
-                    No se encontraron fragmentos de código.
-                  </p>
+
+            <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-md">
+              <div className="text-blue-500 mb-4">
+                <Code className="h-8 w-8" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Organiza snippets
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Clasifica por lenguaje: SSJS, SQL, AMPscript
+              </p>
+            </div>
+
+            <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-md">
+              <div className="text-blue-500 mb-4">
+                <Heart className="h-8 w-8" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Guarda favoritos
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Marca y accede a los mejores snippets de otros usuarios
+              </p>
+            </div>
+
+            <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-md">
+              <div className="text-blue-500 mb-4">
+                <Bot className="h-8 w-8" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Asistente IA
+              </h3>
+              <p className="text-gray-600 dark:text-gray-300">
+                Consulta dudas sobre SFMC con nuestro asistente de IA
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Share Section */}
+      <section className="py-16 bg-white dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
+                Comparte fragmentos de código
+              </h2>
+              <div className="space-y-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+                      <Code className="h-6 w-6" />
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      Sintaxis resaltada
+                    </h3>
+                    <p className="mt-2 text-gray-600 dark:text-gray-300">
+                      Resaltado de sintaxis para SSJS, SQL y AMPscript
+                    </p>
+                  </div>
                 </div>
-              )}
+
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <div className="flex items-center justify-center h-12 w-12 rounded-md bg-blue-500 text-white">
+                      <Share2 className="h-6 w-6" />
+                    </div>
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                      Compartir público/privado
+                    </h3>
+                    <p className="mt-2 text-gray-600 dark:text-gray-300">
+                      Elige si tus snippets son públicos o privados
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-        </>
-      )}
+            
+            <div className="relative">
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <div className="absolute -top-4 -right-4">
+                  <div className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm">
+                    Vista previa
+                  </div>
+                </div>
+                <SyntaxHighlighter 
+                  language="javascript"
+                  style={atomOneDark}
+                  customStyle={{ 
+                    padding: '1.5rem',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.550rem',
+                    backgroundColor: darkMode ? '#1a1a1a' : '#f5f5f5'
+                  }}
+                  wrapLines={true}
+                  showLineNumbers={true}
+                  lineNumberStyle={{ 
+                    color: darkMode ? '#6b7280' : '#9ca3af',
+                    minWidth: '2.5em',
+                    paddingRight: '1em',
+                    textAlign: 'right'
+                  }}
+                >
+                  {codeExample}
+                </SyntaxHighlighter>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-blue-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold text-white mb-8">
+            ¿Listo para empezar?
+          </h2>
+          <div className="flex justify-center gap-4">
+            <Link
+              to="/signup"
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50"
+            >
+              Crear cuenta gratis
+            </Link>
+            <Link
+              to="/explore"
+              className="inline-flex items-center px-6 py-3 border border-white text-base font-medium rounded-md text-white hover:bg-blue-700"
+            >
+              Explorar snippets
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
