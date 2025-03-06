@@ -13,34 +13,39 @@ const AuthRedirectMiddleware = () => {
       if (window.location.hash && window.location.hash.includes('access_token')) {
         try {
           // Parse the hash string into an object
-          const hashParams = Object.fromEntries(
-            new URLSearchParams(window.location.hash.substring(1))
-          );
-
-          if (hashParams.type === 'recovery') {
-            // Set the session with the tokens
-            const { error } = await supabase.auth.setSession({
-              access_token: hashParams.access_token,
-              refresh_token: hashParams.refresh_token
-            });
-
-            if (error) throw error;
+          const params = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          const type = params.get('type');
           
-            // Clear the hash and redirect
-            window.location.hash = '';
+          if (accessToken && type === 'recovery') {
+            console.log('Procesando enlace de recuperación de contraseña');
+            
+            // Configura la sesión con el token
+            const { error } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            });
+            
+            if (error) throw error;
+            
+            // Limpia la URL y redirige
+            window.history.replaceState(null, '', window.location.pathname);
             navigate('/update-password?type=recovery');
             toast.success('Por favor, establece tu nueva contraseña');
+            return;
           }
         } catch (error) {
-          console.error('Error handling auth redirect:', error);
+          console.error('Error procesando el enlace de recuperación:', error);
           toast.error('Error al procesar el enlace de recuperación');
           navigate('/login');
         }
       }
     };
 
+    // Ejecutar inmediatamente para manejar enlaces de recuperación
     handleAuthRedirect();
-  }, [location, navigate]);
+  }, [location.hash, navigate]);  // Dependencia específica en el hash
 
   return null;
 };

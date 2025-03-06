@@ -14,7 +14,8 @@ function ResetPasswordPage() {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/update-password`;
+      // Usamos la URL de origen directamente para que Supabase maneje el hash de manera adecuada
+      const redirectUrl = `${window.location.origin}`;
       
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: redirectUrl,

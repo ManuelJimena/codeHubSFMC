@@ -14,10 +14,15 @@ const UpdatePasswordPage = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // Verifica si es una recuperación de contraseña
         const params = new URLSearchParams(location.search);
         const isRecovery = params.get('type') === 'recovery';
         
-        if (!isRecovery) {
+        // Verifica si hay una sesión activa
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!isRecovery || !session) {
+          console.log('No es una recuperación válida o no hay sesión', { isRecovery, hasSession: !!session });
           navigate('/login');
           toast.error('Enlace de recuperación no válido o expirado');
         }
@@ -53,11 +58,18 @@ const UpdatePasswordPage = () => {
 
       if (error) throw error;
 
-      // Sign out after password update to ensure clean state
+      // Cerrar sesión después de actualizar la contraseña para garantizar un estado limpio
       await supabase.auth.signOut();
       
+      // Limpiar el almacenamiento local para forzar el cierre de sesión completo
+      window.localStorage.clear();
+      
       toast.success('Contraseña actualizada correctamente');
-      navigate('/login');
+      
+      // Pequeña espera antes de redirigir para asegurar que la sesión se haya cerrado
+      setTimeout(() => {
+        navigate('/login');
+      }, 500);
     } catch (error) {
       console.error('Error updating password:', error);
       toast.error(error.message || 'Error al actualizar la contraseña');
