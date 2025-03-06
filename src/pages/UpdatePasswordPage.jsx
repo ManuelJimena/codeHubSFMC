@@ -11,12 +11,14 @@ const UpdatePasswordPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if we have a session
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const params = new URLSearchParams(window.location.search);
+      const isRecovery = params.get('type') === 'recovery';
+      
+      if (!session || !isRecovery) {
         navigate('/login');
-        toast.error('Sesión no válida');
+        toast.error('Enlace de recuperación no válido o expirado');
       }
     };
 
