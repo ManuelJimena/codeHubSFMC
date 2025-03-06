@@ -2,39 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  /* Transiciones suaves para cambios de tema */
-  * {
-    @apply transition-colors duration-500 ease-in-out;
-  }
-  
-  /* Transición específica para el fondo del body */
-  body {
-    @apply transition-colors duration-700 ease-in-out;
-  }
-  
-  /* Transiciones específicas para elementos con background */
-  .bg-white, .bg-gray-50, .bg-gray-100, .bg-gray-200, .bg-gray-700, .bg-gray-800, .bg-gray-900 {
-    @apply transition-colors duration-700 ease-in-out;
-  }
-  
-  /* Transición específica para el navbar */
-  nav {
-    @apply transition-colors duration-700 ease-in-out;
-  }
+/* Transiciones suaves para cambios de tema */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
 }
 
-/* Estilos para los menús desplegables */
+/* Transición específica para el fondo del body */
+body {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 700ms;
+}
+
+/* Transiciones específicas para elementos con background */
+.bg-white, .bg-gray-50, .bg-gray-100, .bg-gray-200, .bg-gray-700, .bg-gray-800, .bg-gray-900 {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 700ms;
+}
+
+/* Transición específica para el navbar */
+nav {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 700ms;
+}
+
 .dropdown-menu {
-  @apply z-50;
+  z-index: 50;
 }
 
-/* Estilos para los overlays */
 .overlay {
-  @apply z-40;
+  z-index: 40;
 }
 
-/* Estilos para el contenido principal */
 .main-content {
-  @apply z-0;
+  z-index: 0;
 }
