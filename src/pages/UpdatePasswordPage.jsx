@@ -1,147 +1,137 @@
-import { createClient } from '@supabase/supabase-js';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { KeyRound } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const UpdatePasswordPage = () => {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storage: window.localStorage
-  }
-});
-
-// Avatar handling functions
-export const uploadAvatar = async (file, userId) => {
-  try {
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      throw new Error('La imagen no puede ser mayor a 2MB');
-    }
-
-    // Generate unique file name
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}-${Date.now()}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
-
-    // Delete existing avatar if any
-    const { data: existingFiles } = await supabase.storage
-      .from('avatars')
-      .list('', {
-        limit: 1,
-        search: userId
-      });
-
-    if (existingFiles?.length > 0) {
-      await supabase.storage
-        .from('avatars')
-        .remove([`avatars/${existingFiles[0].name}`]);
-    }
-
-    // Upload new avatar
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: file.type
-      });
-
-    if (uploadError) throw uploadError;
-
-    // Get public URL
-    const { data } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
-  } catch (error) {
-    console.error('Error uploading avatar:', error);
-    throw error;
-  }
-};
-
-export const deleteAvatar = async (url) => {
-  try {
-    if (!url) return;
-
-    const fileName = url.split('/').pop();
-    if (!fileName) return;
-
-    const { error } = await supabase.storage
-      .from('avatars')
-      .remove([`avatars/${fileName}`]);
-
-    if (error) throw error;
-  } catch (error) {
-    console.error('Error deleting avatar:', error);
-    throw error;
-  }
-};
-
-export const getCurrentUser = async () => {
-  try {
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) throw sessionError;
-    if (!session?.user) return null;
-
-    // Get user profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
-
-    if (profileError) throw profileError;
-
-    // If profile doesn't exist, create it
-    if (!profile) {
-      const isAdmin = session.user.email === 'manuel.jimena29@gmail.com';
-      const { data: newProfile, error: createError } = await supabase
-        .from('profiles')
-        .insert([{
-          id: session.user.id,
-          email: session.user.email,
-          username: session.user.email.split('@')[0],
-          is_admin: isAdmin
-        }])
-        .select()
-        .single();
-
-      if (createError) throw createError;
-      return {
-        ...session.user,
-        ...newProfile
-      };
-    }
-
-    return {
-      ...session.user,
-      ...profile
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        navigate('/login');
+        toast.error('Enlace de recuperación no válido o expirado');
+      }
     };
-  } catch (error) {
-    console.error('Error getting current user:', error);
-    return null;
-  }
+
+    checkSession();
+  }, [navigate]);
+
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (error) throw error;
+
+      toast.success('Contraseña actualizada correctamente');
+      navigate('/login');
+    } catch (error) {
+      console.error('Error updating password:', error);
+      toast.error(error.message || 'Error al actualizar la contraseña');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+          Actualizar contraseña
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
+          Ingresa tu nueva contraseña
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form className="space-y-6" onSubmit={handleUpdatePassword}>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Nueva contraseña
+              </label>
+              <div className="mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Confirmar contraseña
+              </label>
+              <div className="mt-1">
+                <input
+                  id="confirm-password"
+                  name="confirm-password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
+              >
+                {loading ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Actualizando...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <KeyRound className="h-4 w-4 mr-2" />
+                    Actualizar contraseña
+                  </span>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-export const signOut = async () => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    
-    // Clear all local storage
-    window.localStorage.clear();
-    
-    // Force page reload to clear any cached data
-    window.location.href = '/';
-  } catch (error) {
-    console.error('Error during sign out:', error);
-    throw error;
-  }
-};
+export default UpdatePasswordPage
