@@ -1,41 +1,55 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { LogIn } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext';
 
-const LoginPage = () => {
-  const [email, setEmail] = useState('');
+const UpdatePasswordPage = () => {
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
 
-  const handleLogin = async (e) => {
+  useEffect(() => {
+    // Check if we have a session
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login');
+        toast.error('Sesión no válida');
+      }
+    };
+
+    checkSession();
+  }, [navigate]);
+
+  const handleUpdatePassword = async (e) => {
     e.preventDefault();
+    
+    if (password !== confirmPassword) {
+      toast.error('Las contraseñas no coinciden');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const { error } = await supabase.auth.updateUser({
+        password: password
       });
 
       if (error) throw error;
 
-      // Refresh user data immediately after login
-      const user = await refreshUser();
-      
-      if (!user) {
-        throw new Error('No se pudo obtener la información del usuario');
-      }
-
-      toast.success('¡Inicio de sesión exitoso!');
-      navigate('/');
+      toast.success('Contraseña actualizada correctamente');
+      navigate('/login');
     } catch (error) {
-      console.error('Error during login:', error);
-      toast.error(error.message || 'Error al iniciar sesión');
+      console.error('Error updating password:', error);
+      toast.error(error.message || 'Error al actualizar la contraseña');
     } finally {
       setLoading(false);
     }
@@ -45,47 +59,26 @@ const LoginPage = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-          Iniciar sesión en tu cuenta
+          Actualizar contraseña
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-          ¿No tienes una cuenta?{' '}
-          <Link to="/signup" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
-            Regístrate
-          </Link>
+          Ingresa tu nueva contraseña
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleLogin}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Correo electrónico
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                />
-              </div>
-            </div>
-
+          <form className="space-y-6" onSubmit={handleUpdatePassword}>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Contraseña
+                Nueva contraseña
               </label>
               <div className="mt-1">
                 <input
                   id="password"
                   name="password"
                   type="password"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -93,14 +86,23 @@ const LoginPage = () => {
                 />
               </div>
             </div>
-          
-            <div className="text-sm">
-              <Link
-                to="/reset-password"
-                className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
-              >
-                ¿Olvidaste tu contraseña?
-              </Link>
+
+            <div>
+              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Confirmar contraseña
+              </label>
+              <div className="mt-1">
+                <input
+                  id="confirm-password"
+                  name="confirm-password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                />
+              </div>
             </div>
 
             <div>
@@ -115,12 +117,12 @@ const LoginPage = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Iniciando sesión...
+                    Actualizando...
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Iniciar sesión
+                    <KeyRound className="h-4 w-4 mr-2" />
+                    Actualizar contraseña
                   </span>
                 )}
               </button>
@@ -132,4 +134,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default UpdatePasswordPage;
