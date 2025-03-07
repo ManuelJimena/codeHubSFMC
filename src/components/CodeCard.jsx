@@ -34,17 +34,25 @@ const CodeCard = ({ snippet, onToggleFavorite, isFavorite = false }) => {
     }
   };
 
-  const truncateCode = (code, maxLength = 200) => {
-    if (code.length <= maxLength) return code;
-    return code.substring(0, maxLength) + '...';
+  // Función genérica para truncar texto
+  const truncateText = (text, maxLength) => {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   };
+  
+  const truncateCode = (code, maxLength = 200) => {
+    return truncateText(code, maxLength);
+  };
+  
+  const truncatedTitle = truncateText(snippet.title, 28);
+  const truncatedDescription = truncateText(snippet.description, 38);
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-colors">
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <Link to={`/snippet/${snippet.id}`} className="text-lg font-semibold text-gray-800 dark:text-gray-100 hover:text-blue-500 dark:hover:text-blue-400">
-            {snippet.title}
+          <Link to={`/snippet/${snippet.id}`} className="text-lg font-semibold text-gray-800 dark:text-gray-100 hover:text-blue-500 dark:hover:text-blue-400" title={snippet.title}>
+            {truncatedTitle}
           </Link>
           <div className="flex items-center space-x-2">
             <span className={`px-2 py-1 text-xs rounded-full ${
@@ -57,7 +65,7 @@ const CodeCard = ({ snippet, onToggleFavorite, isFavorite = false }) => {
           </div>
         </div>
         
-        <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">{snippet.description}</p>
+        <p className="text-gray-600 dark:text-gray-300 text-sm mb-3" title={snippet.description}>{truncatedDescription}</p>
         
         <div className="bg-gray-900 dark:bg-gray-950 rounded-md overflow-hidden mb-3">
           <SyntaxHighlighter 

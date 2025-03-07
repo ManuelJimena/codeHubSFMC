@@ -20,11 +20,9 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      // Habilitamos la detección automática para facilitar el flujo PKCE
       detectSessionInUrl: true,
       storage: window.localStorage,
-      flowType: 'pkce', // Usar PKCE para mayor seguridad en OAuth
-      debug: import.meta.env.DEV // Habilitar registro de debug en desarrollo
+      flowType: 'pkce' // Usar PKCE para mayor seguridad en OAuth
     }
   }
 );

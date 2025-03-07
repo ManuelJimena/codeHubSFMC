@@ -13,6 +13,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const SignupPage = lazy(() => import('./pages/SignupPage')); 
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const CreateSnippetPage = lazy(() => import('./pages/CreateSnippetPage'));
+const EditSnippetPage = lazy(() => import('./pages/EditSnippetPage'));
 const SnippetDetailPage = lazy(() => import('./pages/SnippetDetailPage'));
 const FavoritesPage = lazy(() => import('./pages/FavoritesPage'));
 const UserSnippetsPage = lazy(() => import('./pages/UserSnippetsPage'));
@@ -45,6 +46,7 @@ function App() {
                   <Route path="/signup" element={<SignupPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
                   <Route path="/create" element={<CreateSnippetPage />} />
+                  <Route path="/edit/:id" element={<EditSnippetPage />} />
                   <Route path="/snippet/:id" element={<SnippetDetailPage />} />
                   <Route path="/favorites" element={<FavoritesPage />} />
                   <Route path="/my-snippets" element={<UserSnippetsPage />} />
@@ -57,8 +59,6 @@ function App() {
             </ErrorBoundary>
           </main>
           <Footer />
-          {/* Componente de depuración siempre visible */}
-          <DebugInfo />
         </div>
       </Router>
     </ErrorBoundary>

@@ -119,11 +119,6 @@ export const AuthProvider = ({ children }) => {
     isAdmin: user?.is_admin || false
   };
 
-  // Agregar un fallback para mostrar contenido mientras se inicializa
-  if (!initialized) {
-    console.log('AuthContext aún no está inicializado');
-  }
-
   return (
     <AuthContext.Provider value={value}>
       {initialized ? children : (

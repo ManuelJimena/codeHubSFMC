@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
-const DebugInfo = () => {
+const DebugInfo = ({ alwaysVisible = false }) => {
   const { user, isAdmin } = useAuth();
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(alwaysVisible);
   const [info, setInfo] = useState({
     supabaseConnected: 'Comprobando...',
     env: {},
@@ -62,8 +62,46 @@ const DebugInfo = () => {
   };
 
   // Solo renderizamos el componente si el usuario es administrador
-  if (!isAdmin) return null;
+  if (!isAdmin && !alwaysVisible) return null;
 
+  // Si es alwaysVisible (en el panel de admin) mostramos diferente UI
+  if (alwaysVisible) {
+    return (
+      <div className="w-full">
+        <h3 className="font-bold mb-2 text-sm text-gray-900 dark:text-white">Información de depuración</h3>
+        
+        <div className="mb-2">
+          <h4 className="font-semibold text-gray-800 dark:text-gray-300">Supabase</h4>
+          <p className="text-sm text-gray-600 dark:text-gray-400">Estado de conexión: {info.supabaseConnected}</p>
+        </div>
+        
+        <div className="mb-2">
+          <h4 className="font-semibold text-gray-800 dark:text-gray-300">Variables de entorno</h4>
+          <ul className="text-sm">
+            {Object.entries(info.env).map(([key, value]) => (
+              <li key={key} className="text-gray-600 dark:text-gray-400">{key}: {value}</li>
+            ))}
+          </ul>
+        </div>
+        
+        <div className="mb-2">
+          <h4 className="font-semibold text-gray-800 dark:text-gray-300">Autenticación</h4>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{info.authStatus}</p>
+        </div>
+        
+        <div>
+          <h4 className="font-semibold text-gray-800 dark:text-gray-300">Navegador</h4>
+          <ul className="text-sm">
+            {Object.entries(info.browserInfo).map(([key, value]) => (
+              <li key={key} className="text-gray-600 dark:text-gray-400">{key}: {value}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+  
+  // Versión flotante para el botón de administrador 
   return (
     <div className="fixed bottom-4 right-4 z-50">
       <button

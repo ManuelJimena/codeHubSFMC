@@ -15,26 +15,21 @@ const UpdatePasswordPage = () => {
   useEffect(() => {
     const checkSessionAndUpdate = async () => {
       try {
-        console.log('Verificando sesión en UpdatePasswordPage');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error al obtener sesión:', error);
           throw error;
         }
         
         if (!session) {
-          console.log('No hay sesión activa para actualizar contraseña');
           toast.error('Por favor, utiliza un enlace de recuperación válido', { duration: 5000 });
           navigate('/login', { replace: true });
           return;
         }
         
-        console.log('Sesión válida para actualizar contraseña:', session.user.email);
         setSessionValid(true);
         
         // Asegurar que estamos en la página de updatePassword sin parámetros adicionales
-        // (esto evita problemas con hashes y parámetros de URL)
         if (window.location.search || window.location.hash) {
           window.history.replaceState(null, document.title, '/update-password');
         }
@@ -42,7 +37,7 @@ const UpdatePasswordPage = () => {
         // Mostrar mensaje de ayuda
         toast.success('Por favor, establece tu nueva contraseña', { duration: 5000 });
         
-        // Añadir un listener para detectar si el usuario intenta abandonar la página
+        // Añadir un listener para alertar si el usuario intenta abandonar la página
         const handleBeforeUnload = (e) => {
           const message = "¿Estás seguro que deseas salir? No has actualizado tu contraseña.";
           e.returnValue = message;
@@ -66,7 +61,6 @@ const UpdatePasswordPage = () => {
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
-    console.log('Formulario enviado para actualizar contraseña');
     
     if (password !== confirmPassword) {
       toast.error('Las contraseñas no coinciden');
@@ -81,31 +75,18 @@ const UpdatePasswordPage = () => {
     setLoading(true);
 
     try {
-      console.log('Intentando actualizar contraseña...');
-      
-      // Mostrar información sobre el estado actual de la sesión
+      // Verificar sesión activa
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
-        console.error('Error al verificar sesión:', sessionError);
         throw sessionError;
       }
       
       if (!session) {
-        console.error('No hay sesión activa');
         throw new Error('No hay una sesión activa para actualizar la contraseña');
       }
       
-      console.log('Sesión válida encontrada:', {
-        user: session.user.email,
-        expires_at: new Date(session.expires_at * 1000).toISOString(),
-        token_type: session.token_type,
-        auth_token_present: !!session.access_token
-      });
-      
-      console.log('Actualizando contraseña con updateUser API...');
-      
-      // Usar la API directa de updateUser para mayor control
+      // Usar la API directa de updateUser para mayor control y evitar problemas con el SDK
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/user`, {
         method: 'PUT',
         headers: {
@@ -118,40 +99,30 @@ const UpdatePasswordPage = () => {
         })
       });
       
-      // Verificar la respuesta HTTP
-      console.log('Respuesta de API updateUser:', response.status, response.statusText);
-      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('Error en respuesta de updateUser:', errorData);
         throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
       
-      const data = await response.json();
-      console.log('Contraseña actualizada correctamente:', !!data);
+      await response.json();
       
       // Notificar éxito y preparar redirección
       toast.success('Contraseña actualizada correctamente', { duration: 5000 });
       
       // Cerrar sesión de manera segura
-      console.log('Cerrando sesión...');
       await supabase.auth.signOut();
       window.localStorage.clear();
       
-      // Mostrar mensaje de redirección
+      // Mostrar mensaje y redirigir
       toast.success('Sesión cerrada. Redirigiendo al login...', { duration: 5000 });
       
-      // Forzar una espera más larga antes de redirigir
-      console.log('Esperando para redirigir...');
-      
       setTimeout(() => {
-        console.log('Redirigiendo a login...');
         // Forzar recarga completa de la página
         window.location.href = '/login';
       }, 3000);
     } catch (error) {
-      console.error('Error detallado al actualizar contraseña:', error);
-      toast.error(`Error: ${error.message || 'Error desconocido al actualizar la contraseña'}`, { duration: 8000 });
+      console.error('Error al actualizar contraseña:', error);
+      toast.error(`Error: ${error.message || 'Error al actualizar la contraseña'}`, { duration: 8000 });
     } finally {
       setLoading(false);
     }
