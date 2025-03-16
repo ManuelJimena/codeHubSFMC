@@ -10,7 +10,7 @@ const SearchPage = () => {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [favorites, setFavorites] = useState([]);
-
+  // Cargar datos iniciales
   useEffect(() => {
     fetchUserFavorites();
   }, []);
@@ -77,7 +77,7 @@ const SearchPage = () => {
     const isFavorite = favorites.includes(snippetId);
     
     if (isFavorite) {
-      // Remove from favorites
+      // Eliminar de favoritos
       const { error } = await supabase
         .from('favorites')
         .delete()
@@ -87,7 +87,7 @@ const SearchPage = () => {
       if (!error) {
         setFavorites(favorites.filter(id => id !== snippetId));
         
-        // Decrement vote count
+        // Decrementar contador de votos
         const { error: updateError } = await supabase.rpc('decrement_votes', {
           snippet_id: snippetId
         });
@@ -101,7 +101,7 @@ const SearchPage = () => {
         }
       }
     } else {
-      // Add to favorites
+      // Añadir a favoritos
       const { error } = await supabase
         .from('favorites')
         .insert({ user_id: user.id, snippet_id: snippetId });
@@ -109,7 +109,7 @@ const SearchPage = () => {
       if (!error) {
         setFavorites([...favorites, snippetId]);
         
-        // Increment vote count
+        // Incrementar contador de votos
         const { error: updateError } = await supabase.rpc('increment_votes', {
           snippet_id: snippetId
         });

@@ -121,6 +121,14 @@ const AIPage = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const chatContainerRef = useRef(null);
 
+  // Desplazar al fondo cuando cambian los mensajes
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Inicializar cliente de OpenAI
   useEffect(() => {
     const initializeClient = async () => {
       if (!user) {
@@ -154,6 +162,7 @@ const AIPage = () => {
 
     initializeClient();
     
+    // Obtener saludo basado en la hora del día
     const getGreeting = () => {
       const hour = new Date().getHours();
       if (hour >= 5 && hour < 12) {
@@ -168,12 +177,7 @@ const AIPage = () => {
     setGreeting(getGreeting());
   }, [user, navigate]);
 
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [messages]);
-
+  // Manejar envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !isInitialized) return;

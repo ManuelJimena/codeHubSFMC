@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -10,9 +10,12 @@ const UserSnippetsPage = () => {
   const { user } = useAuth();
   const [snippets, setSnippets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState('all');
-  const [visibility, setVisibility] = useState('all');
+  const searchDebounce = useRef(null);
+  const [error, setError] = useState(null);
+  const abortController = useRef(null);
+  const initialLoadDone = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -20,14 +23,36 @@ const UserSnippetsPage = () => {
       navigate('/login');
       return;
     }
-    fetchUserSnippets();
-  }, [user, selectedLanguage, visibility]);
+    
+    // Cancelar cualquier petición pendiente
+    if (abortController.current) {
+      abortController.current.abort();
+    }
+
+    if (initialLoadDone.current) {
+      setLoading(true);
+      fetchUserSnippets();
+    } else if (user) {
+      initialLoadDone.current = true;
+      fetchUserSnippets();
+    }
+    
+    return () => {
+      if (abortController.current) {
+        abortController.current.abort();
+      }
+    };
+  }, [user, activeFilter]);
 
   const fetchUserSnippets = async () => {
     if (!user) return;
 
     try {
-      setLoading(true);
+      if (!snippets.length) {
+        setLoading(true);
+      }
+      setError(null);
+      
       let query = supabase
         .from('snippets')
         .select(`
@@ -36,15 +61,18 @@ const UserSnippetsPage = () => {
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-
-      if (selectedLanguage !== 'all') {
-        query = query.eq('language', selectedLanguage);
-      }
-
-      if (visibility === 'public') {
-        query = query.eq('is_public', true);
-      } else if (visibility === 'private') {
-        query = query.eq('is_public', false);
+      
+      // Aplicar filtros
+      switch (activeFilter) {
+        case 'ssjs':
+        case 'sql':
+        case 'ampscript':
+          query = query.eq('language', activeFilter);
+          break;
+        case 'private':
+          query = query.eq('is_public', false);
+          break;
+        // 'all' no necesita filtrado adicional
       }
 
       const { data, error } = await query;
@@ -52,8 +80,12 @@ const UserSnippetsPage = () => {
       if (error) throw error;
       setSnippets(data || []);
     } catch (error) {
-      console.error('Error fetching user snippets:', error);
-      toast.error('Error al cargar los fragmentos de código');
+      // Solo mostrar error si no fue abortado
+      if (error.name !== 'AbortError') {
+        console.error('Error fetching user snippets:', error);
+        setError('Error al cargar los fragmentos de código');
+        toast.error('Error al cargar los fragmentos de código');
+      }
     } finally {
       setLoading(false);
     }
@@ -76,11 +108,24 @@ const UserSnippetsPage = () => {
     }
   };
 
-  const filteredSnippets = snippets.filter(snippet => 
-    (snippet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    snippet.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    snippet.code.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredSnippets = React.useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    return snippets.filter(snippet => 
+      snippet.title.toLowerCase().includes(query) ||
+      snippet.description?.toLowerCase().includes(query) ||
+      snippet.code.toLowerCase().includes(query)
+    );
+  }, [snippets, searchQuery]);
+
+  // Manejar búsqueda con debounce
+  const handleSearchChange = (e) => {
+    if (searchDebounce.current) {
+      clearTimeout(searchDebounce.current);
+    }
+    searchDebounce.current = setTimeout(() => {
+      setSearchQuery(e.target.value);
+    }, 300);
+  };
 
   if (!user) {
     return (
@@ -131,8 +176,8 @@ const UserSnippetsPage = () => {
             <input
               type="text"
               placeholder="Buscar en tus fragmentos..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              defaultValue={searchQuery}
+              onChange={handleSearchChange}
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           </div>
@@ -141,19 +186,19 @@ const UserSnippetsPage = () => {
             {/* Language filter */}
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setSelectedLanguage('all')}
+                onClick={() => setActiveFilter('all')}
                 className={`px-4 py-2 rounded-full text-sm font-medium ${
-                  selectedLanguage === 'all'
-                    ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
+                  activeFilter === 'all'
+                    ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-100'
                     : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
-                Lenguaje: Todos
+                Todos
               </button>
               <button
-                onClick={() => setSelectedLanguage('ssjs')}
+                onClick={() => setActiveFilter(activeFilter === 'ssjs' ? 'all' : 'ssjs')}
                 className={`px-4 py-2 rounded-full text-sm font-medium ${
-                  selectedLanguage === 'ssjs'
+                  activeFilter === 'ssjs'
                     ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
                     : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
@@ -161,9 +206,9 @@ const UserSnippetsPage = () => {
                 SSJS
               </button>
               <button
-                onClick={() => setSelectedLanguage('sql')}
+                onClick={() => setActiveFilter(activeFilter === 'sql' ? 'all' : 'sql')}
                 className={`px-4 py-2 rounded-full text-sm font-medium ${
-                  selectedLanguage === 'sql'
+                  activeFilter === 'sql'
                     ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
                     : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
@@ -171,44 +216,20 @@ const UserSnippetsPage = () => {
                 SQL
               </button>
               <button
-                onClick={() => setSelectedLanguage('ampscript')}
+                onClick={() => setActiveFilter(activeFilter === 'ampscript' ? 'all' : 'ampscript')}
                 className={`px-4 py-2 rounded-full text-sm font-medium ${
-                  selectedLanguage === 'ampscript'
+                  activeFilter === 'ampscript'
                     ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
                     : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
                 AMPscript
               </button>
-            </div>
-
-            {/* Visibility filter */}
-            <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setVisibility('all')}
+                onClick={() => setActiveFilter(activeFilter === 'private' ? 'all' : 'private')}
                 className={`px-4 py-2 rounded-full text-sm font-medium ${
-                  visibility === 'all'
-                    ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                Visibilidad: Todos
-              </button>
-              <button
-                onClick={() => setVisibility('public')}
-                className={`px-4 py-2 rounded-full text-sm font-medium ${
-                  visibility === 'public'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                Públicos
-              </button>
-              <button
-                onClick={() => setVisibility('private')}
-                className={`px-4 py-2 rounded-full text-sm font-medium ${
-                  visibility === 'private'
-                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
+                  activeFilter === 'private'
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
                     : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
               >
@@ -220,41 +241,56 @@ const UserSnippetsPage = () => {
       </div>
 
       {loading ? (
-        <div className="flex justify-center items-center h-64">
+        <div className="flex flex-col justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando fragmentos...</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+          <p className="text-red-500 dark:text-red-400 mb-4">{error}</p>
+          <button
+            onClick={() => fetchUserSnippets()}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+          >
+            Reintentar
+          </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSnippets.length > 0 ? (
-            filteredSnippets.map(snippet => (
-              <CodeCard
-                key={snippet.id}
-                snippet={snippet}
-                onDelete={() => handleDeleteSnippet(snippet.id)}
-                showActions={true}
-              />
-            ))
-          ) : (
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-              <Code className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                No se encontraron fragmentos de código
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                {searchQuery
-                  ? 'No hay resultados para tu búsqueda'
-                  : 'Comienza creando tu primer fragmento de código'}
-              </p>
-              <Link
-                to="/create"
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Crear fragmento
-              </Link>
-            </div>
-          )}
-        </div>
+        <>
+          <div className="relative">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                {filteredSnippets.length > 0 ? (
+                  filteredSnippets.map(snippet => (
+                    <CodeCard
+                      key={snippet.id}
+                      snippet={snippet}
+                      onDelete={() => handleDeleteSnippet(snippet.id)}
+                      showActions={true}
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                    <Code className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                      No se encontraron fragmentos de código
+                    </h3>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">
+                      {searchQuery
+                        ? 'No hay resultados para tu búsqueda'
+                        : 'Comienza creando tu primer fragmento de código'}
+                    </p>
+                    <Link
+                      to="/create"
+                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Crear fragmento
+                    </Link>
+                  </div>
+                )}
+              </div>
+          </div>
+        </>
       )}
     </div>
   );

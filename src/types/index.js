@@ -1,30 +1,30 @@
 /**
- * @typedef {Object} User
+ * @typedef {Object} User - Usuario
  * @property {string} id
- * @property {string} email
- * @property {string} username
- * @property {string} [avatar_url]
+ * @property {string} email - Correo electrónico
+ * @property {string} username - Nombre de usuario
+ * @property {string} [avatar_url] - URL del avatar
  */
 
 /**
- * @typedef {Object} CodeSnippet
+ * @typedef {Object} CodeSnippet - Fragmento de código
  * @property {string} id
- * @property {string} title
- * @property {string} description
- * @property {string} code
- * @property {'ssjs' | 'sql' | 'ampscript'} language
- * @property {boolean} is_public
- * @property {string} created_at
- * @property {string} updated_at
- * @property {string} user_id
- * @property {Object} [user]
- * @property {string} user.username
- * @property {string} [user.avatar_url]
- * @property {number} votes
+ * @property {string} title - Título
+ * @property {string} description - Descripción
+ * @property {string} code - Código
+ * @property {'ssjs' | 'sql' | 'ampscript'} language - Lenguaje
+ * @property {boolean} is_public - Es público
+ * @property {string} created_at - Fecha de creación
+ * @property {string} updated_at - Fecha de actualización
+ * @property {string} user_id - ID del usuario
+ * @property {Object} [user] - Usuario
+ * @property {string} user.username - Nombre de usuario
+ * @property {string} [user.avatar_url] - URL del avatar
+ * @property {number} votes - Votos
  */
 
 /**
- * @typedef {'ssjs' | 'sql' | 'ampscript' | 'all'} CodeLanguage
+ * @typedef {'ssjs' | 'sql' | 'ampscript' | 'all'} CodeLanguage - Lenguaje de código
  */
 
 export {};

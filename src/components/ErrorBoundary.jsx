@@ -1,18 +1,21 @@
-import React from 'react';
+import React, { Component } from 'react';
 
-class ErrorBoundary extends React.Component {
+class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null, errorInfo: null };
+    this.resetError = this.resetError.bind(this);
+  }
+
+  resetError = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null });
   }
 
   static getDerivedStateFromError(error) {
-    // Actualiza el estado para que el siguiente renderizado muestre la UI alternativa
     return { hasError: true, error };
   }
 
   componentDidCatch(error, errorInfo) {
-    // También puedes registrar el error en un servicio de reportes
     console.error("Error capturado por ErrorBoundary:", error, errorInfo);
     this.setState({ errorInfo });
   }
@@ -37,7 +40,10 @@ class ErrorBoundary extends React.Component {
           )}
           <button
             className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              this.resetError();
+              window.location.reload();
+            }}
           >
             Reiniciar aplicación
           </button>

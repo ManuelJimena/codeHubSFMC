@@ -12,7 +12,7 @@ const ProfilePage = () => {
   const [avatarFile, setAvatarFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
-
+  // Cargar datos del usuario
   useEffect(() => {
     if (user) {
       setUsername(user.username);
@@ -21,7 +21,7 @@ const ProfilePage = () => {
       navigate('/login');
     }
   }, [user]);
-
+  // Manejar selección de archivo de avatar
   const handleAvatarChange = (e) => {
     try {
       if (!e.target.files || !e.target.files[0]) return;
@@ -44,25 +44,55 @@ const ProfilePage = () => {
     e.preventDefault();
     if (!user) return;
     
+    // Eliminar espacios en blanco del nombre de usuario
+    const trimmedUsername = username.trim();
+    
+    // Validación básica
+    if (!trimmedUsername) {
+      toast.error('El nombre de usuario es obligatorio');
+      return;
+    }
+    
+    if (trimmedUsername.length < 3) {
+      toast.error('El nombre de usuario debe tener al menos 3 caracteres');
+      return;
+    }
+    
     setSaving(true);
     
     try {
+      // Verificar si el nombre de usuario está en uso (solo si cambió)
+      if (trimmedUsername !== user.username) {
+        const { data: existingUser, error: checkError } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('username', trimmedUsername)
+          .neq('id', user.id)
+          .maybeSingle();
+        
+        if (checkError) throw checkError;
+        
+        if (existingUser) {
+          throw new Error('Este nombre de usuario ya está en uso');
+        }
+      }
+      
       let newAvatarUrl = avatarUrl;
       
       if (avatarFile) {
-        // Delete old avatar if exists
+        // Eliminar avatar antiguo si existe
         if (user.avatar_url) {
           await deleteAvatar(user.avatar_url);
         }
         
-        // Upload new avatar
+        // Subir nuevo avatar
         newAvatarUrl = await uploadAvatar(avatarFile, user.id);
       }
       
       const { error } = await supabase
         .from('profiles')
         .update({
-          username,
+          username: trimmedUsername,
           avatar_url: newAvatarUrl
         })
         .eq('id', user.id);
@@ -73,7 +103,10 @@ const ProfilePage = () => {
       toast.success('Perfil actualizado exitosamente');
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Error al actualizar el perfil');
+      const errorMessage = error.message === 'Este nombre de usuario ya está en uso' 
+        ? error.message 
+        : 'Error al actualizar el perfil';
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }

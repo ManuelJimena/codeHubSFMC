@@ -10,7 +10,7 @@ const HomePage = () => {
   const { darkMode } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-
+  // Manejar redirecciones de autenticación
   useEffect(() => {
     const handleAuthRedirect = async () => {
       const { data: { session } } = await supabase.auth.getSession();

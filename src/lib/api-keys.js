@@ -8,7 +8,7 @@ export async function getApiKeys() {
 
     if (error) throw error;
 
-    // Convert array to object
+    // Convertir array a objeto
     const keys = {};
     data.forEach(({ key_name, key_value }) => {
       keys[key_name] = key_value;
@@ -16,7 +16,7 @@ export async function getApiKeys() {
 
     return keys;
   } catch (error) {
-    console.error('Error fetching API keys:', error);
+    console.error('Error al obtener las claves API:', error);
     return null;
   }
 }

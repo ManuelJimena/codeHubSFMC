@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, getCurrentUser } from '../lib/supabase';
 import toast from 'react-hot-toast';
-
+// Crear contexto y hook
 const AuthContext = createContext(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth debe usarse dentro de un AuthProvider');
   }
   return context;
 };
@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Initial session check
+  // Verificación inicial de sesión
   useEffect(() => {
     let isMounted = true;
     
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  // Auth state change listener
+  // Escucha cambios en el estado de autenticación
   useEffect(() => {
     if (!initialized) return;
 

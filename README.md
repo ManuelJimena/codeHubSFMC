@@ -4,36 +4,78 @@ Una plataforma moderna para compartir y gestionar fragmentos de código de Marke
 
 ## 🚀 Características
 
-- 🔐 Autenticación de usuarios con email y contraseña
-- 💾 Guardar y compartir fragmentos de código (SSJS, SQL, AMPscript)
-- ❤️ Sistema de favoritos
-- 🌓 Modo claro/oscuro
-- 🔍 Búsqueda avanzada de fragmentos
-- 📱 Diseño responsive
-- 👤 Panel de administración
-- 🔒 Control de visibilidad (público/privado)
+- 🔐 Autenticación robusta
+  - Registro y login con email/contraseña
+  - Recuperación de contraseña segura
+  - Perfiles de usuario personalizables
+  - Roles de usuario (admin/regular)
+
+- 💾 Gestión de Código
+  - Soporte para SSJS, SQL y AMPscript
+  - Editor con resaltado de sintaxis
+  - Organización por lenguaje
+  - Visibilidad pública/privada
+  - Sistema de favoritos
+  - Contador de votos
+
+- 🎨 Interfaz Moderna
+  - Diseño responsive
+  - Modo claro/oscuro
+  - Animaciones suaves
+  - Feedback visual
+  - Loading states
+
+- 🔍 Búsqueda y Filtros
+  - Búsqueda en tiempo real
+  - Filtros por lenguaje
+  - Filtros por visibilidad
+  - Ordenamiento personalizado
+  - Vista de favoritos
+
+- 👤 Panel de Administración
+  - Gestión de usuarios
+  - Moderación de contenido
+  - Estadísticas de uso
+  - Gestión de API keys
+  - Logs del sistema
+
 - 🤖 Asistente IA para SFMC
-- 🔑 Gestión de claves API
-- 📊 Estadísticas de uso
+  - Integración con OpenRouter
+  - Contexto específico de SFMC
+  - Ejemplos de código
+  - Respuestas formateadas
+  - Historial de chat
 
 ## 🛠️ Tecnologías
 
-- React 18
-- Vite
-- Tailwind CSS
-- Supabase (base de datos y autenticación)
-- React Router
-- React Syntax Highlighter
-- Lucide React (iconos)
-- OpenAI API (asistente IA)
-- React Hot Toast (notificaciones)
+- **Frontend**
+  - React 18
+  - Vite
+  - Tailwind CSS
+  - React Router v6
+  - React Syntax Highlighter
+  - Lucide React (iconos)
+  - React Hot Toast
+
+- **Backend**
+  - Supabase
+  - PostgreSQL
+  - Row Level Security
+  - Storage para avatares
+  - Políticas de seguridad
+
+- **IA**
+  - OpenRouter API
+  - GPT-3.5 Turbo
+  - Streaming de respuestas
+  - Formato de código
 
 ## 📋 Requisitos Previos
 
 - Node.js (v18 o superior)
 - npm o yarn
 - Cuenta de Supabase
-- Clave API de OpenRouter (para el asistente IA)
+- Clave API de OpenRouter
 
 ## 🚀 Instalación
 
@@ -48,20 +90,25 @@ cd codehubsfmc
 npm install
 ```
 
-3. Crea un archivo `.env` en el directorio raíz y añade tus credenciales:
+3. Crea un archivo `.env` en el directorio raíz:
 ```env
+# Supabase Configuration
 VITE_SUPABASE_URL=tu-url-de-supabase
 VITE_SUPABASE_ANON_KEY=tu-clave-anonima-de-supabase
+
+# OpenAI Configuration
+VITE_OPENROUTER_API_KEY=tu-clave-api-openrouter
+VITE_OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 ```
 
 4. Configura las claves API en Supabase:
-   - Accede al panel de administración desde el usuario admin
-   - Ve a la sección "Claves API"
-   - Añade las siguientes claves:
-     - `OPENROUTER_API_KEY`: Tu clave de API de OpenRouter
-     - `OPENROUTER_BASE_URL`: URL base de OpenRouter (https://openrouter.ai/api/v1)
+   - Accede al panel de administración
+   - Ve a "Claves API"
+   - Configura:
+     - `OPENROUTER_API_KEY`
+     - `OPENROUTER_BASE_URL`
 
-4. Inicia el servidor de desarrollo:
+5. Inicia el servidor de desarrollo:
 ```bash
 npm run dev
 ```
@@ -79,23 +126,23 @@ src/
 │   └── ThemeContext   # Gestión del tema
 ├── lib/           # Utilidades y configuraciones
 │   ├── supabase.js    # Cliente y funciones de Supabase
-│   └── api-keys.js    # Gestión de claves API seguras
+│   └── api-keys.js    # Gestión de claves API
 ├── pages/         # Páginas de la aplicación
 └── types/         # Definiciones de tipos
 
 supabase/
 └── migrations/    # Migraciones de la base de datos
+```
 
 ## 🔑 Gestión de Claves API
 
 Las claves API se gestionan de forma segura a través de Supabase:
 
-1. Las claves se almacenan en la tabla `api_keys`
-2. Solo los administradores pueden gestionar las claves
-3. Los usuarios autenticados pueden leer las claves
-4. Implementa Row Level Security (RLS) para protección adicional
-
-```
+1. Almacenamiento seguro en tabla `api_keys`
+2. Acceso controlado por roles
+3. Políticas RLS específicas
+4. Auditoría de uso
+5. Rotación periódica recomendada
 
 ## 📜 Scripts Disponibles
 
@@ -119,3 +166,10 @@ Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](L
 ## 👥 Autores
 
 - Manuel Jimena - [GitHub](https://github.com/ManuelJimena)
+
+## 🙏 Agradecimientos
+
+- [Supabase](https://supabase.io/) por la infraestructura backend
+- [OpenRouter](https://openrouter.ai/) por el acceso a la API de IA
+- [Tailwind CSS](https://tailwindcss.com/) por el framework de estilos
+- La comunidad de código abierto por sus contribuciones

@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
-const ThemeToggle = ({ isMobile = false }) => {
+const ThemeToggle = memo(({ isMobile = false }) => {
   const { darkMode, toggleTheme } = useTheme();
 
   if (isMobile) {
@@ -40,6 +40,6 @@ const ThemeToggle = ({ isMobile = false }) => {
       )}
     </button>
   );
-};
+});
 
 export default ThemeToggle;

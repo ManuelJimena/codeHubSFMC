@@ -2,25 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import CodeCard from '../components/CodeCard';
+import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const FavoritesPage = () => {
+  const { user } = useAuth();
   const [snippets, setSnippets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     fetchFavorites();
-  }, []);
+  }, [user, navigate]);
 
   const fetchFavorites = async () => {
+    setLoading(true);
+    setError(null);
+
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/login');
-        return;
-      }
-      
       const { data, error } = await supabase
         .from('favorites')
         .select(`
@@ -34,40 +38,55 @@ const FavoritesPage = () => {
       
       if (error) {
         console.error('Error fetching favorites:', error);
+        throw new Error('Error al cargar los favoritos');
       } else {
         const favoriteSnippets = data
           .map(item => item.snippets)
           .filter(Boolean);
         
+        if (!favoriteSnippets.length) {
+          console.log('No se encontraron favoritos');
+        }
+        
         setSnippets(favoriteSnippets);
       }
     } catch (error) {
       console.error('Error fetching favorites:', error);
+      setError(error.message);
+      toast.error(error.message || 'Error al cargar los favoritos');
     } finally {
       setLoading(false);
     }
   };
 
   const handleToggleFavorite = async (snippetId) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Debes iniciar sesión para gestionar favoritos');
+      return;
+    }
     
-    if (!user) return;
-    
-    // Remove from favorites
-    const { error } = await supabase
-      .from('favorites')
-      .delete()
-      .eq('user_id', user.id)
-      .eq('snippet_id', snippetId);
-    
-    if (!error) {
-      // Decrement vote count
+    try {
+      // Eliminar de favoritos
+      const { error } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('snippet_id', snippetId);
+      
+      if (error) throw error;
+      
+      // Decrementar contador de votos
       await supabase.rpc('decrement_votes', {
         snippet_id: snippetId
       });
       
-      // Update local state
+      // Actualizar estado local
       setSnippets(snippets.filter(snippet => snippet.id !== snippetId));
+      toast.success('Eliminado de favoritos');
+    } catch (error) {
+      console.error('Error updating vote count:', error);
+      toast.error('Error al eliminar de favoritos');
+      toast.error('Error al actualizar el contador de votos');
     }
   };
 
@@ -81,8 +100,19 @@ const FavoritesPage = () => {
       </div>
 
       {loading ? (
-        <div className="flex justify-center items-center h-64">
+        <div className="flex flex-col justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando favoritos...</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+          <p className="text-red-500 dark:text-red-400 mb-4">{error}</p>
+          <button
+            onClick={() => fetchFavorites()}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+          >
+            Reintentar
+          </button>
         </div>
       ) : (
         <>

@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Eye } from 'lucide-react';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark, atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { useTheme } from '../context/ThemeContext';
 
-const CodeCard = ({ snippet, onToggleFavorite, isFavorite = false }) => {
+const CodeCard = memo(({ snippet, onToggleFavorite, isFavorite = false }) => {
   const { darkMode } = useTheme();
   
-  const getLanguageLabel = (language) => {
+  const getLanguageLabel = React.useCallback((language) => {
     switch (language) {
       case 'ssjs':
         return 'SSJS';
@@ -19,9 +19,9 @@ const CodeCard = ({ snippet, onToggleFavorite, isFavorite = false }) => {
       default:
         return language;
     }
-  };
+  }, []);
 
-  const getLanguageForHighlighter = (language) => {
+  const getLanguageForHighlighter = React.useCallback((language) => {
     switch (language) {
       case 'ssjs':
         return 'javascript';
@@ -32,14 +32,14 @@ const CodeCard = ({ snippet, onToggleFavorite, isFavorite = false }) => {
       default:
         return 'javascript';
     }
-  };
+  }, []);
 
   // Función genérica para truncar texto
   const truncateText = (text, maxLength) => {
     if (!text || text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
   };
-  
+  // Función para truncar código
   const truncateCode = (code, maxLength = 200) => {
     return truncateText(code, maxLength);
   };
@@ -118,6 +118,6 @@ const CodeCard = ({ snippet, onToggleFavorite, isFavorite = false }) => {
       </div>
     </div>
   );
-};
+});
 
 export default CodeCard;

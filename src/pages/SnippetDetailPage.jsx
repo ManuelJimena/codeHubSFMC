@@ -19,6 +19,7 @@ const SnippetDetailPage = () => {
   const { darkMode } = useTheme();
 
   useEffect(() => {
+    // Cargar datos cuando el componente se monta
     const loadData = async () => {
       try {
         setError(null);
@@ -85,7 +86,7 @@ const SnippetDetailPage = () => {
     
     try {
       if (isFavorite) {
-        // Remove from favorites
+        // Eliminar de favoritos
         const { error } = await supabase
           .from('favorites')
           .delete()
@@ -94,7 +95,7 @@ const SnippetDetailPage = () => {
         
         if (error) throw error;
         
-        // Decrement vote count
+        // Decrementar contador de votos
         await supabase.rpc('decrement_votes', {
           snippet_id: snippet.id
         });
@@ -106,14 +107,14 @@ const SnippetDetailPage = () => {
         setIsFavorite(false);
         toast.success('Eliminado de favoritos');
       } else {
-        // Add to favorites
+        // Añadir a favoritos
         const { error } = await supabase
           .from('favorites')
           .insert({ user_id: user.id, snippet_id: snippet.id });
         
         if (error) throw error;
         
-        // Increment vote count
+        // Incrementar contador de votos
         await supabase.rpc('increment_votes', {
           snippet_id: snippet.id
         });

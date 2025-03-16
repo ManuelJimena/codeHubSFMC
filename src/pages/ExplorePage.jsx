@@ -16,7 +16,7 @@ const ExplorePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState([]);
   const ITEMS_PER_PAGE = 12;
-
+  // Cargar datos iniciales
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -70,7 +70,7 @@ const ExplorePage = () => {
         query = query.eq('language', filter.language);
       }
 
-      // Add range for pagination
+      // Añadir rango para paginación
       query = query
         .range(from, to)
         .limit(ITEMS_PER_PAGE + 1);
@@ -79,10 +79,10 @@ const ExplorePage = () => {
       
       if (error) throw error;
       
-      // If we received more items than ITEMS_PER_PAGE, there are more pages
+      // Si recibimos más elementos que ITEMS_PER_PAGE, hay más páginas
       const hasMoreItems = data && data.length > ITEMS_PER_PAGE;
       
-      // Remove the extra item if it exists
+      // Eliminar el elemento extra si existe
       const snippetsToShow = hasMoreItems ? data.slice(0, -1) : data;
       
       console.log('Snippets loaded:', { count: snippetsToShow.length, hasMore: hasMoreItems });

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
-const DebugInfo = ({ alwaysVisible = false }) => {
+const DebugInfo = memo(({ alwaysVisible = false }) => {
   const { user, isAdmin } = useAuth();
   const [isVisible, setIsVisible] = useState(alwaysVisible);
   const [info, setInfo] = useState({
@@ -12,28 +12,26 @@ const DebugInfo = ({ alwaysVisible = false }) => {
     browserInfo: {}
   });
 
+  const checkSupabaseConnection = useCallback(async () => {
+    try {
+      const { error } = await supabase.from('profiles').select('id').limit(1);
+      return error ? `Error: ${error.message}` : 'Conectado';
+    } catch (err) {
+      return `Error: ${err.message}`;
+    }
+  }, []);
+
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) return `Error: ${error.message}`;
+      return data.session ? `Autenticado como ${data.session.user.email}` : 'No autenticado';
+    } catch (err) {
+      return `Error: ${err.message}`;
+    }
+  }, []);
+
   useEffect(() => {
-    // Comprobar conexión con Supabase
-    const checkSupabaseConnection = async () => {
-      try {
-        const { error } = await supabase.from('profiles').select('id').limit(1);
-        return error ? `Error: ${error.message}` : 'Conectado';
-      } catch (err) {
-        return `Error: ${err.message}`;
-      }
-    };
-
-    // Comprobar estado de autenticación
-    const checkAuthStatus = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) return `Error: ${error.message}`;
-        return data.session ? `Autenticado como ${data.session.user.email}` : 'No autenticado';
-      } catch (err) {
-        return `Error: ${err.message}`;
-      }
-    };
-
     const getInfo = async () => {
       const supabaseConnected = await checkSupabaseConnection();
       const authStatus = await checkAuthStatus();
@@ -55,11 +53,11 @@ const DebugInfo = ({ alwaysVisible = false }) => {
     };
 
     getInfo();
-  }, []);
+  }, [checkSupabaseConnection, checkAuthStatus]);
 
-  const toggleVisibility = () => {
+  const toggleVisibility = useCallback(() => {
     setIsVisible(!isVisible);
-  };
+  }, [isVisible]);
 
   // Solo renderizamos el componente si el usuario es administrador
   if (!isAdmin && !alwaysVisible) return null;
@@ -147,6 +145,8 @@ const DebugInfo = ({ alwaysVisible = false }) => {
       )}
     </div>
   );
-};
+});
+
+DebugInfo.displayName = 'DebugInfo';
 
 export default DebugInfo;

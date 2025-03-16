@@ -4,12 +4,12 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please check your .env file.');
-  // Use hardcoded values as fallback in development only
+  console.error('Faltan variables de entorno de Supabase. Por favor, verifica tu archivo .env.');
+  // Usar valores predeterminados solo en desarrollo
   if (import.meta.env.DEV) {
-    console.warn('Using fallback Supabase credentials for development only');
+    console.warn('Usando credenciales de respaldo de Supabase solo para desarrollo');
   } else {
-    throw new Error('Missing Supabase environment variables');
+    throw new Error('Faltan variables de entorno de Supabase');
   }
 }
 
@@ -27,20 +27,20 @@ export const supabase = createClient(
   }
 );
 
-// Avatar handling functions
+// Funciones de manejo de avatares
 export const uploadAvatar = async (file, userId) => {
   try {
-    // Validate file size (max 2MB)
+    // Validar tamaño del archivo (máx 2MB)
     if (file.size > 2 * 1024 * 1024) {
       throw new Error('La imagen no puede ser mayor a 2MB');
     }
 
-    // Generate unique file name
+    // Generar nombre único para el archivo
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}-${Date.now()}.${fileExt}`;
     const filePath = `avatars/${fileName}`;
 
-    // Delete existing avatar if any
+    // Eliminar avatar existente si existe
     const { data: existingFiles } = await supabase.storage
       .from('avatars')
       .list('', {
@@ -54,7 +54,7 @@ export const uploadAvatar = async (file, userId) => {
         .remove([`avatars/${existingFiles[0].name}`]);
     }
 
-    // Upload new avatar
+    // Subir nuevo avatar
     const { error: uploadError } = await supabase.storage
       .from('avatars')
       .upload(filePath, file, {
@@ -65,14 +65,14 @@ export const uploadAvatar = async (file, userId) => {
 
     if (uploadError) throw uploadError;
 
-    // Get public URL
+    // Obtener URL pública
     const { data } = supabase.storage
       .from('avatars')
       .getPublicUrl(filePath);
 
     return data.publicUrl;
   } catch (error) {
-    console.error('Error uploading avatar:', error);
+    console.error('Error al subir el avatar:', error);
     throw error;
   }
 };

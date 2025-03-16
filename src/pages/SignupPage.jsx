@@ -18,7 +18,7 @@ function SignupPage() {
     setLoading(true);
 
     try {
-      // Check if username is already taken
+      // Verificar si el nombre de usuario ya está en uso
       const { data: existingUser } = await supabase
         .from('profiles')
         .select('username')
@@ -31,7 +31,7 @@ function SignupPage() {
         return;
       }
 
-      // Create auth user
+      // Crear usuario de autenticación
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -46,7 +46,7 @@ function SignupPage() {
         throw new Error('No se pudo crear el usuario');
       }
 
-      // Create profile
+      // Crear perfil
       const { error: profileError } = await supabase
         .from('profiles')
         .insert([{
