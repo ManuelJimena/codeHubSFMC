@@ -8,11 +8,14 @@ import toast from 'react-hot-toast';
 const ExplorePage = () => {
   const { user } = useAuth();
   const [snippets, setSnippets] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedLanguage, setSelectedLanguage] = useState('all');
+  const [filter, setFilter] = useState({ type: 'all', language: 'all' });
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState([]);
+  const ITEMS_PER_PAGE = 12;
 
   useEffect(() => {
     const loadData = async () => {
@@ -30,28 +33,62 @@ const ExplorePage = () => {
     };
 
     loadData();
-  }, [selectedLanguage, user]);
+  }, [filter, user, currentPage]); // Add currentPage as dependency
 
   const fetchSnippets = async () => {
     try {
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
+      console.log('Fetching snippets:', { from, to, currentPage });
+
       let query = supabase
         .from('snippets')
         .select(`
-          *,
+          id,
+          title,
+          description,
+          code,
+          language,
+          is_public,
+          user_id,
+          votes,
+          created_at,
+          updated_at,
           user:profiles(username, avatar_url)
         `)
-        .eq('is_public', true)
-        .order('created_at', { ascending: false });
+        .eq('is_public', true);
       
-      if (selectedLanguage !== 'all') {
-        query = query.eq('language', selectedLanguage);
+      // Aplicar orden según el tipo de filtro
+      if (filter.type === 'featured') {
+        query = query.order('votes', { ascending: false });
+      } else {
+        query = query.order('created_at', { ascending: false });
       }
+      
+      if (filter.language !== 'all') {
+        query = query.eq('language', filter.language);
+      }
+
+      // Add range for pagination
+      query = query
+        .range(from, to)
+        .limit(ITEMS_PER_PAGE + 1);
       
       const { data, error } = await query;
       
       if (error) throw error;
       
-      setSnippets(data || []);
+      // If we received more items than ITEMS_PER_PAGE, there are more pages
+      const hasMoreItems = data && data.length > ITEMS_PER_PAGE;
+      
+      // Remove the extra item if it exists
+      const snippetsToShow = hasMoreItems ? data.slice(0, -1) : data;
+      
+      console.log('Snippets loaded:', { count: snippetsToShow.length, hasMore: hasMoreItems });
+
+      setSnippets(snippetsToShow || []);
+      setHasMore(hasMoreItems);
     } catch (error) {
       console.error('Error fetching snippets:', error);
       throw new Error('Error al cargar los fragmentos de código');
@@ -140,10 +177,27 @@ const ExplorePage = () => {
     }
   };
 
+  const handleFilterChange = (newFilter) => {
+    setCurrentPage(1); // Reset to first page when filter changes
+    setFilter(newFilter);
+  };
+
   const filteredSnippets = snippets.filter(snippet => 
     snippet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     snippet.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(prev => prev - 1);
+      window.scrollTo(0, 0);
+    }
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => prev + 1);
+    window.scrollTo(0, 0);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -174,42 +228,62 @@ const ExplorePage = () => {
       <div className="mb-8 flex justify-center">
         <div className="flex flex-wrap justify-center gap-2">
           <button
+            onClick={() => {
+              handleFilterChange({ type: 'all', language: 'all' });
+            }}
             className={`px-4 py-2 rounded-full text-sm font-medium ${
-              selectedLanguage === 'all'
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
+              filter.type === 'all' && filter.language === 'all'
+                ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-100'
                 : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
-            onClick={() => setSelectedLanguage('all')}
           >
             Todos
           </button>
           <button
+            onClick={() => {
+              handleFilterChange({ type: 'featured', language: 'all' });
+            }}
             className={`px-4 py-2 rounded-full text-sm font-medium ${
-              selectedLanguage === 'ssjs'
+              filter.type === 'featured'
+                ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100'
+                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+            }`}
+          >
+            Destacados
+          </button>
+          <button
+            className={`px-4 py-2 rounded-full text-sm font-medium ${
+              filter.language === 'ssjs'
                 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
                 : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
-            onClick={() => setSelectedLanguage('ssjs')}
+            onClick={() => {
+              handleFilterChange({ type: 'all', language: 'ssjs' });
+            }}
           >
             SSJS
           </button>
           <button
             className={`px-4 py-2 rounded-full text-sm font-medium ${
-              selectedLanguage === 'sql'
+              filter.language === 'sql'
                 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
                 : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
-            onClick={() => setSelectedLanguage('sql')}
+            onClick={() => {
+              handleFilterChange({ type: 'all', language: 'sql' });
+            }}
           >
             SQL
           </button>
           <button
             className={`px-4 py-2 rounded-full text-sm font-medium ${
-              selectedLanguage === 'ampscript'
+              filter.language === 'ampscript'
                 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
                 : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
             }`}
-            onClick={() => setSelectedLanguage('ampscript')}
+            onClick={() => {
+              handleFilterChange({ type: 'all', language: 'ampscript' });
+            }}
           >
             AMPscript
           </button>
@@ -233,24 +307,49 @@ const ExplorePage = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredSnippets.length > 0 ? (
-                filteredSnippets.map(snippet => (
-                  <CodeCard
-                    key={snippet.id}
-                    snippet={snippet}
-                    onToggleFavorite={handleToggleFavorite}
-                    isFavorite={favorites.includes(snippet.id)}
-                  />
-                ))
-              ) : (
-                <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
-                  <p className="text-gray-500 dark:text-gray-400 text-lg">
-                    No se encontraron fragmentos de código.
-                  </p>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredSnippets.length > 0 ? (
+                  filteredSnippets.map(snippet => (
+                    <CodeCard
+                      key={snippet.id}
+                      snippet={snippet}
+                      onToggleFavorite={handleToggleFavorite}
+                      isFavorite={favorites.includes(snippet.id)}
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-1 md:col-span-2 lg:col-span-3 text-center py-12">
+                    <p className="text-gray-500 dark:text-gray-400 text-lg">
+                      No se encontraron fragmentos de código.
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Pagination controls */}
+              {filteredSnippets.length > 0 && (
+                <div className="mt-8 flex justify-center space-x-4">
+                  <button
+                    onClick={handlePreviousPage}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Anteriores
+                  </button>
+                  <span className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">
+                    Página {currentPage}
+                  </span>
+                  <button
+                    onClick={handleNextPage}
+                    disabled={!hasMore}
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Siguientes
+                  </button>
                 </div>
               )}
-            </div>
+            </>
           )}
         </>
       )}

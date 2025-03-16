@@ -18,39 +18,54 @@ const CreateSnippetPage = () => {
   const validateInput = () => {
     if (!title.trim()) {
       toast.error('El título es obligatorio');
+      console.log('Validación fallida: título vacío');
       return false;
     }
     if (!code.trim()) {
       toast.error('El código es obligatorio');
+      console.log('Validación fallida: código vacío');
       return false;
     }
     if (title.length > 100) {
       toast.error('El título no puede tener más de 100 caracteres');
+      console.log('Validación fallida: título demasiado largo');
       return false;
     }
     if (code.length > 10000) {
       toast.error('El código no puede tener más de 10000 caracteres');
+      console.log('Validación fallida: código demasiado largo');
       return false;
     }
+    console.log('Validación exitosa');
     return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Verificar autenticación
     if (!user) {
       toast.error('Debes iniciar sesión para crear un fragmento de código');
       navigate('/login');
       return;
     }
 
+    // Validar entrada
     if (!validateInput()) return;
 
     setLoading(true);
 
     try {
-      // Crear el snippet
-      const { data, error } = await supabase
+      console.log('Creando snippet:', {
+        title: title.trim(),
+        description: description.trim(),
+        code: code.trim(),
+        language,
+        is_public: isPublic,
+        user_id: user.id
+      });
+
+      const { data: snippet, error } = await supabase
         .from('snippets')
         .insert([{
           title: title.trim(),
@@ -58,22 +73,19 @@ const CreateSnippetPage = () => {
           code: code.trim(),
           language,
           is_public: isPublic,
-          user_id: user.id,
-          votes: 0
+          user_id: user.id
         }])
         .select()
         .single();
 
-      if (error) {
-        throw new Error(error.message);
+      if (error || !snippet) {
+        throw new Error(error?.message || 'No se pudo crear el fragmento de código');
       }
 
-      if (!data) {
-        throw new Error('No se pudo crear el fragmento de código');
-      }
+      console.log('Snippet creado exitosamente:', snippet);
 
       toast.success('¡Fragmento de código creado exitosamente!');
-      navigate(`/snippet/${data.id}`);
+      navigate(`/snippet/${snippet.id}`);
     } catch (error) {
       console.error('Error creating snippet:', error);
       toast.error(error.message || 'Error al crear el fragmento de código');

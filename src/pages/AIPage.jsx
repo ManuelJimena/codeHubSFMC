@@ -243,9 +243,29 @@ const AIPage = () => {
           </div>
 
           <div className="max-w-2xl mx-auto">
+            <form onSubmit={handleSubmit} className="mb-4">
+              <div className="flex">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Escribe tu pregunta..."
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  disabled={isLoading || !isInitialized}
+                />
+                <button 
+                  type="submit"
+                  disabled={isLoading || !input.trim() || !isInitialized}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Send className="h-5 w-5" />
+                </button>
+              </div>
+            </form>
+
             <div 
               ref={chatContainerRef}
-              className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-y-auto mb-4"
+              className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-y-auto mt-4"
             >
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 dark:text-gray-400 py-4">
@@ -284,38 +304,7 @@ const AIPage = () => {
                   </div>
                 ))
               )}
-              {isLoading && (
-                <div className="text-center py-2">
-                  <div className="inline-block animate-bounce">
-                    <span className="text-gray-500 dark:text-gray-400">●</span>
-                  </div>
-                  <div className="inline-block animate-bounce delay-100">
-                    <span className="text-gray-500 dark:text-gray-400">●</span>
-                  </div>
-                  <div className="inline-block animate-bounce delay-200">
-                    <span className="text-gray-500 dark:text-gray-400">●</span>
-                  </div>
-                </div>
-              )}
             </div>
-
-            <form onSubmit={handleSubmit} className="mt-4 flex">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Escribe tu pregunta..."
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                disabled={isLoading || !isInitialized}
-              />
-              <button 
-                type="submit"
-                disabled={isLoading || !input.trim() || !isInitialized}
-                className="px-4 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Send className="h-5 w-5" />
-              </button>
-            </form>
           </div>
         </div>
       </div>
