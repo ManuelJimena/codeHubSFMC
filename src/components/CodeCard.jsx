@@ -34,18 +34,25 @@ const CodeCard = memo(({ snippet, onToggleFavorite, isFavorite = false }) => {
     }
   }, []);
 
-  // Función genérica para truncar texto
   const truncateText = (text, maxLength) => {
     if (!text || text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
   };
-  // Función para truncar código
+
   const truncateCode = (code, maxLength = 200) => {
     return truncateText(code, maxLength);
   };
   
   const truncatedTitle = truncateText(snippet.title, 28);
   const truncatedDescription = truncateText(snippet.description, 38);
+
+  const handleFavoriteClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(snippet.id);
+    }
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-colors">
@@ -88,7 +95,7 @@ const CodeCard = memo(({ snippet, onToggleFavorite, isFavorite = false }) => {
         <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
           <div className="flex items-center space-x-4">
             <button 
-              onClick={() => onToggleFavorite && onToggleFavorite(snippet.id)}
+              onClick={handleFavoriteClick}
               className={`flex items-center ${isFavorite ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400'}`}
             >
               <Heart className="h-4 w-4 mr-1" fill={isFavorite ? 'currentColor' : 'none'} />
@@ -119,5 +126,7 @@ const CodeCard = memo(({ snippet, onToggleFavorite, isFavorite = false }) => {
     </div>
   );
 });
+
+CodeCard.displayName = 'CodeCard';
 
 export default CodeCard;
