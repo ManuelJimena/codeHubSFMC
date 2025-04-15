@@ -16,37 +16,31 @@ const ExplorePage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [favorites, setFavorites] = useState([]);
   const ITEMS_PER_PAGE = 12;
-
   // Cargar datos iniciales
   useEffect(() => {
-    let isMounted = true;
     const loadData = async () => {
       try {
         setError(null);
         await Promise.all([
-          fetchSnippets(isMounted),
-          user && fetchUserFavorites(isMounted)
+          fetchSnippets(),
+          user && fetchUserFavorites()
         ]);
       } catch (error) {
-        if (isMounted) {
-          console.error('Error al cargar los datos:', error);
-          setError('Error al cargar los datos. Por favor, intenta de nuevo.');
-          toast.error('Error al cargar los datos');
-        }
+        console.error('Error loading data:', error);
+        setError('Error al cargar los datos. Por favor, intenta de nuevo.');
+        toast.error('Error al cargar los datos');
       }
     };
 
     loadData();
+  }, [filter, user, currentPage]); // Add currentPage as dependency
 
-    return () => {
-      isMounted = false;
-    };
-  }, [filter, user, currentPage]);
-
-  const fetchSnippets = async (isMounted = true) => {
+  const fetchSnippets = async () => {
     try {
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
+
+      console.log('Fetching snippets:', { from, to, currentPage });
 
       let query = supabase
         .from('snippets')
@@ -85,26 +79,25 @@ const ExplorePage = () => {
       
       if (error) throw error;
       
-      if (isMounted) {
-        // Si recibimos más elementos que ITEMS_PER_PAGE, hay más páginas
-        const hasMoreItems = data && data.length > ITEMS_PER_PAGE;
-        
-        // Eliminar el elemento extra si existe
-        const snippetsToShow = hasMoreItems ? data.slice(0, -1) : data;
-        
-        setSnippets(snippetsToShow || []);
-        setHasMore(hasMoreItems);
-        setLoading(false);
-      }
+      // Si recibimos más elementos que ITEMS_PER_PAGE, hay más páginas
+      const hasMoreItems = data && data.length > ITEMS_PER_PAGE;
+      
+      // Eliminar el elemento extra si existe
+      const snippetsToShow = hasMoreItems ? data.slice(0, -1) : data;
+      
+      console.log('Snippets loaded:', { count: snippetsToShow.length, hasMore: hasMoreItems });
+
+      setSnippets(snippetsToShow || []);
+      setHasMore(hasMoreItems);
     } catch (error) {
-      if (isMounted) {
-        console.error('Error al cargar los fragmentos:', error);
-        throw new Error('Error al cargar los fragmentos de código');
-      }
+      console.error('Error fetching snippets:', error);
+      throw new Error('Error al cargar los fragmentos de código');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const fetchUserFavorites = async (isMounted = true) => {
+  const fetchUserFavorites = async () => {
     if (!user) return;
     
     try {
@@ -115,11 +108,9 @@ const ExplorePage = () => {
       
       if (error) throw error;
       
-      if (isMounted) {
-        setFavorites(data?.map(fav => fav.snippet_id) || []);
-      }
+      setFavorites(data?.map(fav => fav.snippet_id) || []);
     } catch (error) {
-      console.error('Error al cargar favoritos:', error);
+      console.error('Error fetching favorites:', error);
       throw error;
     }
   };
@@ -129,16 +120,12 @@ const ExplorePage = () => {
       toast.error('Debes iniciar sesión para añadir a favoritos');
       return;
     }
-
-    const loadingToast = toast.loading(
-      favorites.includes(snippetId) ? 'Eliminando de favoritos...' : 'Añadiendo a favoritos...'
-    );
     
     try {
       const isFavorite = favorites.includes(snippetId);
       
       if (isFavorite) {
-        // Eliminar de favoritos
+        // Remove from favorites
         const { error } = await supabase
           .from('favorites')
           .delete()
@@ -149,7 +136,7 @@ const ExplorePage = () => {
         
         setFavorites(favorites.filter(id => id !== snippetId));
         
-        // Decrementar contador de votos
+        // Decrement vote count
         await supabase.rpc('decrement_votes', {
           snippet_id: snippetId
         });
@@ -160,9 +147,9 @@ const ExplorePage = () => {
             : snippet
         ));
 
-        toast.success('Eliminado de favoritos', { id: loadingToast });
+        toast.success('Eliminado de favoritos');
       } else {
-        // Añadir a favoritos
+        // Add to favorites
         const { error } = await supabase
           .from('favorites')
           .insert({ user_id: user.id, snippet_id: snippetId });
@@ -171,7 +158,7 @@ const ExplorePage = () => {
         
         setFavorites([...favorites, snippetId]);
         
-        // Incrementar contador de votos
+        // Increment vote count
         await supabase.rpc('increment_votes', {
           snippet_id: snippetId
         });
@@ -182,42 +169,34 @@ const ExplorePage = () => {
             : snippet
         ));
 
-        toast.success('Añadido a favoritos', { id: loadingToast });
+        toast.success('Añadido a favoritos');
       }
     } catch (error) {
-      console.error('Error al actualizar favoritos:', error);
-      toast.error('Error al actualizar favoritos', { id: loadingToast });
+      console.error('Error toggling favorite:', error);
+      toast.error('Error al actualizar favoritos');
     }
   };
 
   const handleFilterChange = (newFilter) => {
-    setLoading(true);
-    setCurrentPage(1);
+    setCurrentPage(1); // Reset to first page when filter changes
     setFilter(newFilter);
   };
 
-  const filteredSnippets = React.useMemo(() => {
-    const query = searchQuery.toLowerCase();
-    return snippets.filter(snippet => 
-      snippet.title.toLowerCase().includes(query) ||
-      snippet.description?.toLowerCase().includes(query)
-    );
-  }, [snippets, searchQuery]);
+  const filteredSnippets = snippets.filter(snippet => 
+    snippet.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    snippet.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {
-      setLoading(true);
       setCurrentPage(prev => prev - 1);
       window.scrollTo(0, 0);
     }
   };
 
   const handleNextPage = () => {
-    if (hasMore) {
-      setLoading(true);
-      setCurrentPage(prev => prev + 1);
-      window.scrollTo(0, 0);
-    }
+    setCurrentPage(prev => prev + 1);
+    window.scrollTo(0, 0);
   };
 
   return (
@@ -315,11 +294,7 @@ const ExplorePage = () => {
         <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
           <p className="text-red-500 dark:text-red-400 text-lg mb-4">{error}</p>
           <button
-            onClick={() => {
-              setLoading(true);
-              setError(null);
-              fetchSnippets();
-            }}
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
           >
             Reintentar
@@ -352,11 +327,12 @@ const ExplorePage = () => {
                 )}
               </div>
               
+              {/* Pagination controls */}
               {filteredSnippets.length > 0 && (
                 <div className="mt-8 flex justify-center space-x-4">
                   <button
                     onClick={handlePreviousPage}
-                    disabled={currentPage === 1 || loading}
+                    disabled={currentPage === 1}
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Anteriores
@@ -366,7 +342,7 @@ const ExplorePage = () => {
                   </span>
                   <button
                     onClick={handleNextPage}
-                    disabled={!hasMore || loading}
+                    disabled={!hasMore}
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Siguientes
