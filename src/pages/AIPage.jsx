@@ -313,24 +313,26 @@ const AIPage = () => {
             <form onSubmit={handleSubmit} className="mb-4">
               {/* Contenedor relativo para colocar el botón flotante */}
               <div className="relative">
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Escribe tu pregunta... (Shift + Enter para nueva línea)"
-                  className="block w-full px-4 py-2 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none overflow-hidden"
-                  disabled={isLoading} // solo se bloquea durante la carga
-                  rows={1}
-                  style={{ minHeight: '42px', maxHeight: '200px' }}
-                  aria-label="Caja de mensaje para el chat"
-                />
+               <textarea
+  ref={textareaRef}
+  value={input}
+  onChange={handleInputChange}
+  onKeyDown={handleKeyDown}
+  placeholder="Escribe tu pregunta... (Shift + Enter para nueva línea)"
+  className="block w-full px-4 py-2 pr-12 border border-gray-300 dark:border-gray-600
+             rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+             bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+             resize-none overflow-y-auto"        // ← antes tenía overflow-hidden
+  disabled={isLoading}
+  rows={1}
+  style={{ minHeight: '42px', maxHeight: '200px' }}
+  aria-label="Caja de mensaje para el chat"
+/>
                 {/* Botón flotante reducido */}
-                <button
+               <button
   type="submit"
   disabled={isLoading || !input.trim() || !isInitialized}
-  /* centrado vertical: top‑1/2 + translateY */
-  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center
+  className="absolute right-2 bottom-2 h-8 w-8 flex items-center justify-center
              bg-blue-500 text-white rounded-full hover:bg-blue-600
              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
              dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
