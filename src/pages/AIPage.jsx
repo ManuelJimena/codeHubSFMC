@@ -219,25 +219,33 @@ const AIPage = () => {
     try {
       const completion = await client.chat.completions.create({
         model: 'openai/gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Eres un asistente experto en Marketing Cloud de Salesforce, especialmente en SSJS, SQL y AMPscript. Proporciona respuestas concisas y útiles, con ejemplos de código cuando sea relevante. Cuando proporciones ejemplos de código, asegúrate de envolverlos en bloques de código usando triple backtick (```) y especifica el lenguaje.'
-          },
-          ...messages.map((msg) => ({
-            role: msg.role,
-            content: msg.content
-          })),
-          { role: 'user', content: userMessage }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-        top_p: 1,
-        frequency_penalty: 0,
-        presence_penalty: 0
-      });
-
+  messages: [
+    {
+      role: 'system',
+      content: `Eres SFMC‑AI, un asistente senior especializado en Salesforce Marketing Cloud.
+Tu experiencia principal es:
+• AMPscript avanzado para Email y CloudPages
+• Server‑Side JavaScript (SSJS) en Scripts Activities y CloudPages
+• SQL para Query Activities y Data Views
+Responde siempre en español neutro.
+Cuando proporciones código:
+  – Usa el lenguaje correcto tras \`\`\` (ej. \`\`\`ssjs, \`\`\`sql, \`\`\`ampscript).
+  – Incluye comentarios breves dentro del bloque si ayudan a entenderlo.
+  – No añadas texto fuera de los bloques salvo explicación o pasos de uso.
+Sé breve y directo; evita relleno, disculpas y divagaciones.`
+    },
+    ...messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content
+    })),
+    { role: 'user', content: userMessage }
+  ],
+  temperature: 0.25,
+  top_p: 1,
+  max_tokens: 1000,
+  frequency_penalty: 0.2,
+  presence_penalty: 0,
+});
       if (completion.choices?.[0]?.message?.content) {
         const assistantMessage = completion.choices[0].message.content;
         setMessages((prev) => [
