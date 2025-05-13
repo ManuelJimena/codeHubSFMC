@@ -129,7 +129,7 @@ const AIPage = () => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   const chatContainerRef = useRef(null);
-  const textareaRef = useRef(null);          //  ← nuevo ref
+  const textareaRef = useRef(null);          //  ← para auto‑resize
 
   // ─────────────────────────────────────
   // Auto‑scroll del contenedor de chat
@@ -212,7 +212,7 @@ const AIPage = () => {
 
     const userMessage = input.trim();
     setInput('');
-    updateTextareaHeight(); // reset a altura mínima
+    updateTextareaHeight(); // reset altura mínima
     setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
@@ -311,26 +311,36 @@ const AIPage = () => {
           <div className="max-w-2xl mx-auto">
             {/* Formulario */}
             <form onSubmit={handleSubmit} className="mb-4">
-              <div className="flex">
+              {/* Contenedor relativo para colocar el botón flotante */}
+              <div className="relative">
                 <textarea
                   ref={textareaRef}
                   value={input}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Escribe tu pregunta... (Shift + Enter para nueva línea)"
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none overflow-hidden"
-                  disabled={isLoading || !isInitialized}
+                  className="block w-full px-4 py-2 pr-14 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none overflow-hidden"
+                  disabled={isLoading}     // solo se bloquea durante la carga
                   rows={1}
                   style={{ minHeight: '42px', maxHeight: '200px' }}
+                  aria-label="Caja de mensaje para el chat"
                 />
+                {/* Botón flotante */}
                 <button
                   type="submit"
                   disabled={isLoading || !input.trim() || !isInitialized}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="absolute bottom-2 right-2 h-10 w-10 flex items-center justify-center bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Enviar"
                 >
                   <Send className="h-5 w-5" />
                 </button>
               </div>
+              {!isInitialized && (
+                <p className="mt-2 text-sm text-red-500">
+                  Conectando con el servicio de IA… Puedes escribir, pero el
+                  envío se habilitará en unos segundos.
+                </p>
+              )}
             </form>
 
             {/* Contenedor de mensajes */}
