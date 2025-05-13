@@ -327,10 +327,10 @@ Sé breve y directo; evita relleno, disculpas y divagaciones.`
   onChange={handleInputChange}
   onKeyDown={handleKeyDown}
   placeholder="Escribe tu pregunta... (Shift + Enter para nueva línea)"
-  className="block w-full px-4 py-2 pr-16 border border-gray-300 dark:border-gray-600
-             rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
-             bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-             resize-none overflow-y-auto" 
+  className="block w-full px-4 py-2 pr-20 border border-gray-300 dark:border-gray-600
+           rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+           resize-none overflow-y-auto" 
   disabled={isLoading}
   rows={1}
   style={{ minHeight: '42px', maxHeight: '200px' }}
@@ -340,10 +340,10 @@ Sé breve y directo; evita relleno, disculpas y divagaciones.`
                <button
   type="submit"
   disabled={isLoading || !input.trim() || !isInitialized}
-  className="absolute right-4 bottom-2 h-8 w-8 flex items-center justify-center
-             bg-blue-500 text-white rounded-full hover:bg-blue-600
-             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-             dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+  className="absolute right-6 bottom-1 h-8 w-8 flex items-center justify-center
+           bg-blue-500 text-white rounded-full hover:bg-blue-600
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+           dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
   title="Enviar"
 >
   <Send className="h-4 w-4" />
