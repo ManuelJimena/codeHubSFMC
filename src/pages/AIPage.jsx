@@ -129,7 +129,7 @@ const AIPage = () => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   const chatContainerRef = useRef(null);
-  const textareaRef = useRef(null); // para auto‑resize
+  const textareaRef = useRef(null);
 
   // ─────────────────────────────────────
   // Auto‑scroll del contenedor de chat
@@ -212,7 +212,7 @@ const AIPage = () => {
 
     const userMessage = input.trim();
     setInput('');
-    updateTextareaHeight(); // reset altura mínima
+    updateTextareaHeight();
     setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
@@ -326,7 +326,7 @@ Sé breve y directo; evita relleno, disculpas y divagaciones.`
   value={input}
   onChange={handleInputChange}
   onKeyDown={handleKeyDown}
-  placeholder="Escribe tu pregunta... (Shift + Enter para nueva línea)"
+  placeholder="Escribe tu pregunta..."
   className="block w-full px-4 py-2 pr-20 border border-gray-300 dark:border-gray-600
            rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
            bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
