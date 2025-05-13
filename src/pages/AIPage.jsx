@@ -129,7 +129,7 @@ const AIPage = () => {
   const [isInitialized, setIsInitialized] = useState(false);
 
   const chatContainerRef = useRef(null);
-  const textareaRef = useRef(null);          //  ← para auto‑resize
+  const textareaRef = useRef(null); // para auto‑resize
 
   // ─────────────────────────────────────
   // Auto‑scroll del contenedor de chat
@@ -319,20 +319,20 @@ const AIPage = () => {
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Escribe tu pregunta... (Shift + Enter para nueva línea)"
-                  className="block w-full px-4 py-2 pr-14 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none overflow-hidden"
-                  disabled={isLoading}     // solo se bloquea durante la carga
+                  className="block w-full px-4 py-2 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none overflow-hidden"
+                  disabled={isLoading} // solo se bloquea durante la carga
                   rows={1}
                   style={{ minHeight: '42px', maxHeight: '200px' }}
                   aria-label="Caja de mensaje para el chat"
                 />
-                {/* Botón flotante */}
+                {/* Botón flotante reducido */}
                 <button
                   type="submit"
                   disabled={isLoading || !input.trim() || !isInitialized}
-                  className="absolute bottom-2 right-2 h-10 w-10 flex items-center justify-center bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="absolute bottom-2 right-2 h-8 w-8 flex items-center justify-center bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Enviar"
                 >
-                  <Send className="h-5 w-5" />
+                  <Send className="h-4 w-4" />
                 </button>
               </div>
               {!isInitialized && (
