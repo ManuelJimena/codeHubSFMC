@@ -1,3 +1,4 @@
+// src/pages/AIPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -5,12 +6,18 @@ import { Bot, Send, Copy, Check } from 'lucide-react';
 import OpenAI from 'openai';
 import toast from 'react-hot-toast';
 import SyntaxHighlighter from 'react-syntax-highlighter';
-import { atomOneDark, atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs';
+import {
+  atomOneDark,
+  atomOneLight
+} from 'react-syntax-highlighter/dist/esm/styles/hljs';
 import { useTheme } from '../context/ThemeContext';
 import { getApiKeys } from '../lib/api-keys';
 
 let client = null;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPONENTES AUXILIARES
+// ─────────────────────────────────────────────────────────────────────────────
 const CodeBlock = ({ code, language }) => {
   const { darkMode } = useTheme();
   const [copied, setCopied] = useState(false);
@@ -44,8 +51,8 @@ const CodeBlock = ({ code, language }) => {
           marginTop: '0.5rem',
           marginBottom: '0.5rem'
         }}
-        wrapLines={true}
-        showLineNumbers={true}
+        wrapLines
+        showLineNumbers
         lineNumberStyle={{
           color: darkMode ? '#6b7280' : '#9ca3af',
           minWidth: '2.5em',
@@ -66,7 +73,6 @@ const MessageContent = ({ content }) => {
   let match;
 
   while ((match = codeBlockRegex.exec(content)) !== null) {
-    // Add text before code block
     if (match.index > lastIndex) {
       parts.push({
         type: 'text',
@@ -74,7 +80,6 @@ const MessageContent = ({ content }) => {
       });
     }
 
-    // Add code block
     parts.push({
       type: 'code',
       language: match[1] || 'javascript',
@@ -84,7 +89,6 @@ const MessageContent = ({ content }) => {
     lastIndex = match.index + match[0].length;
   }
 
-  // Add remaining text
   if (lastIndex < content.length) {
     parts.push({
       type: 'text',
@@ -95,7 +99,7 @@ const MessageContent = ({ content }) => {
   return (
     <div>
       {parts.length > 0 ? (
-        parts.map((part, index) => (
+        parts.map((part, index) =>
           part.type === 'code' ? (
             <CodeBlock key={index} code={part.content} language={part.language} />
           ) : (
@@ -103,7 +107,7 @@ const MessageContent = ({ content }) => {
               {part.content}
             </p>
           )
-        ))
+        )
       ) : (
         <p className="whitespace-pre-wrap">{content}</p>
       )}
@@ -111,24 +115,35 @@ const MessageContent = ({ content }) => {
   );
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PÁGINA PRINCIPAL
+// ─────────────────────────────────────────────────────────────────────────────
 const AIPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [greeting, setGreeting] = useState('');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const chatContainerRef = useRef(null);
 
-  // Desplazar al fondo cuando cambian los mensajes
+  const chatContainerRef = useRef(null);
+  const textareaRef = useRef(null);          //  ← nuevo ref
+
+  // ─────────────────────────────────────
+  // Auto‑scroll del contenedor de chat
+  // ─────────────────────────────────────
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Inicializar cliente de OpenAI
+  // ─────────────────────────────────────
+  // Inicializar cliente OpenAI + saludo
+  // ─────────────────────────────────────
   useEffect(() => {
     const initializeClient = async () => {
       if (!user) {
@@ -161,45 +176,60 @@ const AIPage = () => {
     };
 
     initializeClient();
-    
-    // Obtener saludo basado en la hora del día
+
     const getGreeting = () => {
       const hour = new Date().getHours();
-      if (hour >= 5 && hour < 12) {
-        return 'Buenos días';
-      } else if (hour >= 12 && hour < 20) {
-        return 'Buenas tardes';
-      } else {
-        return 'Buenas noches';
-      }
+      if (hour >= 5 && hour < 12) return 'Buenos días';
+      if (hour >= 12 && hour < 20) return 'Buenas tardes';
+      return 'Buenas noches';
     };
 
     setGreeting(getGreeting());
   }, [user, navigate]);
 
-  // Manejar envío del formulario
+  // ─────────────────────────────────────
+  // Input auto‑resize
+  // ─────────────────────────────────────
+  const updateTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const newHeight = Math.min(textareaRef.current.scrollHeight, 200);
+      textareaRef.current.style.height = `${newHeight}px`;
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    updateTextareaHeight();
+  };
+
+  // ─────────────────────────────────────
+  // Envío del formulario
+  // ─────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !isInitialized) return;
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    updateTextareaHeight(); // reset a altura mínima
+    setMessages((prev) => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
     try {
       const completion = await client.chat.completions.create({
-        model: "openai/gpt-3.5-turbo",
+        model: 'openai/gpt-3.5-turbo',
         messages: [
           {
-            role: "system",
-            content: "Eres un asistente experto en Marketing Cloud de Salesforce, especialmente en SSJS, SQL y AMPscript. Proporciona respuestas concisas y útiles, con ejemplos de código cuando sea relevante. Cuando proporciones ejemplos de código, asegúrate de envolverlos en bloques de código usando triple backtick (```) y especifica el lenguaje."
+            role: 'system',
+            content:
+              'Eres un asistente experto en Marketing Cloud de Salesforce, especialmente en SSJS, SQL y AMPscript. Proporciona respuestas concisas y útiles, con ejemplos de código cuando sea relevante. Cuando proporciones ejemplos de código, asegúrate de envolverlos en bloques de código usando triple backtick (```) y especifica el lenguaje.'
           },
-          ...messages.map(msg => ({
+          ...messages.map((msg) => ({
             role: msg.role,
             content: msg.content
           })),
-          { role: "user", content: userMessage }
+          { role: 'user', content: userMessage }
         ],
         temperature: 0.7,
         max_tokens: 1000,
@@ -208,9 +238,12 @@ const AIPage = () => {
         presence_penalty: 0
       });
 
-      if (completion.choices && completion.choices[0]?.message?.content) {
+      if (completion.choices?.[0]?.message?.content) {
         const assistantMessage = completion.choices[0].message.content;
-        setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: assistantMessage }
+        ]);
       } else {
         throw new Error('Respuesta inválida del API');
       }
@@ -222,32 +255,41 @@ const AIPage = () => {
     }
   };
 
-  // Manejar teclas especiales
+  // ─────────────────────────────────────
+  // Atajos de teclado
+  // ─────────────────────────────────────
   const handleKeyDown = (e) => {
+    // Shift + Enter → salto de línea sin enviar
     if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
       const cursorPosition = e.target.selectionStart;
-      const newValue = input.slice(0, cursorPosition) + '\n' + input.slice(cursorPosition);
+      const newValue =
+        input.slice(0, cursorPosition) + '\n' + input.slice(cursorPosition);
       setInput(newValue);
-      // Establecer el cursor después del salto de línea
+
       setTimeout(() => {
         e.target.selectionStart = cursorPosition + 1;
         e.target.selectionEnd = cursorPosition + 1;
+        updateTextareaHeight();
       }, 0);
+
+      // Enter → enviar
     } else if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
   };
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
+  // ─────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
         <div className="p-6">
+          {/* Cabecera */}
           <div className="flex items-center justify-center mb-8">
             <Bot className="h-12 w-12 text-blue-500" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white ml-3">
@@ -255,6 +297,7 @@ const AIPage = () => {
             </h1>
           </div>
 
+          {/* Saludo */}
           <div className="text-center mb-8">
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
               {greeting}, {user.username}
@@ -264,20 +307,23 @@ const AIPage = () => {
             </p>
           </div>
 
+          {/* Chat */}
           <div className="max-w-2xl mx-auto">
+            {/* Formulario */}
             <form onSubmit={handleSubmit} className="mb-4">
               <div className="flex">
                 <textarea
+                  ref={textareaRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Escribe tu pregunta... (Shift + Enter para nueva línea)"
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none overflow-hidden"
                   disabled={isLoading || !isInitialized}
                   rows={1}
                   style={{ minHeight: '42px', maxHeight: '200px' }}
                 />
-                <button 
+                <button
                   type="submit"
                   disabled={isLoading || !input.trim() || !isInitialized}
                   className="px-4 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -287,7 +333,8 @@ const AIPage = () => {
               </div>
             </form>
 
-            <div 
+            {/* Contenedor de mensajes */}
+            <div
               ref={chatContainerRef}
               className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 min-h-[300px] max-h-[500px] overflow-y-auto mt-4"
             >
@@ -301,7 +348,8 @@ const AIPage = () => {
                     <li>• Mejores prácticas en SFMC</li>
                   </ul>
                   <p className="mt-4 text-orange-500 font-semibold">
-                    No compartas datos privados, sensibles o información de clientes en este chat.
+                    No compartas datos privados, sensibles o información de
+                    clientes en este chat.
                   </p>
                 </div>
               ) : (
