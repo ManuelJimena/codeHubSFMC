@@ -222,6 +222,24 @@ const AIPage = () => {
     }
   };
 
+  // Manejar teclas especiales
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && e.shiftKey) {
+      e.preventDefault();
+      const cursorPosition = e.target.selectionStart;
+      const newValue = input.slice(0, cursorPosition) + '\n' + input.slice(cursorPosition);
+      setInput(newValue);
+      // Establecer el cursor después del salto de línea
+      setTimeout(() => {
+        e.target.selectionStart = cursorPosition + 1;
+        e.target.selectionEnd = cursorPosition + 1;
+      }, 0);
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   if (!user) {
     return null;
   }
@@ -249,13 +267,15 @@ const AIPage = () => {
           <div className="max-w-2xl mx-auto">
             <form onSubmit={handleSubmit} className="mb-4">
               <div className="flex">
-                <input
-                  type="text"
+                <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Escribe tu pregunta..."
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                  onKeyDown={handleKeyDown}
+                  placeholder="Escribe tu pregunta... (Shift + Enter para nueva línea)"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 resize-none"
                   disabled={isLoading || !isInitialized}
+                  rows={1}
+                  style={{ minHeight: '42px', maxHeight: '200px' }}
                 />
                 <button 
                   type="submit"
