@@ -327,13 +327,17 @@ const AIPage = () => {
                 />
                 {/* Botón flotante reducido */}
                 <button
-                  type="submit"
-                  disabled={isLoading || !input.trim() || !isInitialized}
-                  className="absolute bottom-2 right-2 h-8 w-8 flex items-center justify-center bg-blue-500 text-white rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Enviar"
-                >
-                  <Send className="h-4 w-4" />
-                </button>
+  type="submit"
+  disabled={isLoading || !input.trim() || !isInitialized}
+  /* centrado vertical: top‑1/2 + translateY */
+  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center
+             bg-blue-500 text-white rounded-full hover:bg-blue-600
+             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+             dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+  title="Enviar"
+>
+  <Send className="h-4 w-4" />
+</button>
               </div>
               {!isInitialized && (
                 <p className="mt-2 text-sm text-red-500">
