@@ -5,27 +5,18 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Faltan variables de entorno de Supabase. Por favor, verifica tu archivo .env.');
-  // Usar valores predeterminados solo en desarrollo
-  if (import.meta.env.DEV) {
-    console.warn('Usando credenciales de respaldo de Supabase solo para desarrollo');
-  } else {
-    throw new Error('Faltan variables de entorno de Supabase');
-  }
+  throw new Error('Faltan variables de entorno de Supabase');
 }
 
-export const supabase = createClient(
-  supabaseUrl || 'https://trojpsbnoofpoxwbhfhe.supabase.co', 
-  supabaseAnonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRyb2pwc2Jub29mcG94d2JoZmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDEwMDY4MzksImV4cCI6MjA1NjU4MjgzOX0.9IK1s8M1zFsb9LPE0JTfeML7cFrpCz2KhRLyy0pJ_LM', 
-  {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storage: window.localStorage,
-      flowType: 'pkce' // Usar PKCE para mayor seguridad en OAuth
-    }
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+    flowType: 'pkce'
   }
-);
+});
 
 // Funciones de manejo de avatares
 export const uploadAvatar = async (file, userId) => {
@@ -98,7 +89,17 @@ export const deleteAvatar = async (url) => {
 export const getCurrentUser = async () => {
   try {
     console.log('Obteniendo sesión de usuario...');
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    // Timeout para evitar cuelgues
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Session timeout')), 8000);
+    });
+    
+    const { data: { session }, error: sessionError } = await Promise.race([
+      sessionPromise,
+      timeoutPromise
+    ]);
     
     if (sessionError) {
       console.error('Error al obtener la sesión:', sessionError);
@@ -113,15 +114,23 @@ export const getCurrentUser = async () => {
     console.log('Sesión activa encontrada para:', session.user.email);
 
     try {
-      // Get user profile
-      const { data: profile, error: profileError } = await supabase
+      // Get user profile con timeout
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
+        
+      const profileTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Profile timeout')), 5000);
+      });
+
+      const { data: profile, error: profileError } = await Promise.race([
+        profilePromise,
+        profileTimeoutPromise
+      ]);
 
       if (profileError && profileError.code !== 'PGRST116') {
-        // PGRST116 es el código cuando no se encuentra el registro
         console.error('Error al obtener el perfil:', profileError);
         throw profileError;
       }

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, getCurrentUser } from '../lib/supabase';
 import toast from 'react-hot-toast';
+
 // Crear contexto y hook
 const AuthContext = createContext(undefined);
 
@@ -29,26 +30,39 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Verificación inicial de sesión
+  // Verificación inicial de sesión con timeout más agresivo
   useEffect(() => {
     let isMounted = true;
+    let timeoutId;
     
     const initAuth = async () => {
       try {
         console.log('Iniciando autenticación...');
-        const currentUser = await refreshUser();
+        
+        // Timeout más corto para evitar cargas infinitas
+        const authPromise = refreshUser();
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Auth timeout')), 5000);
+        });
+        
+        const currentUser = await Promise.race([authPromise, timeoutPromise]);
+        
+        if (timeoutId) clearTimeout(timeoutId);
+        
         console.log('Estado de usuario:', currentUser ? 'Autenticado' : 'No autenticado');
         
-        // Solo actualizar el estado si el componente sigue montado
         if (isMounted) {
           setLoading(false);
           setInitialized(true);
           console.log('Inicialización de AuthContext completada');
         }
       } catch (error) {
+        if (timeoutId) clearTimeout(timeoutId);
         console.error('Error initializing auth:', error);
-        // Incluso en caso de error, debemos marcar como inicializado
+        
         if (isMounted) {
+          // En caso de error o timeout, marcar como inicializado de todos modos
+          setUser(null);
           setLoading(false);
           setInitialized(true);
           console.log('Inicialización de AuthContext completada con errores');
@@ -56,42 +70,53 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Configurar un tiempo máximo para la inicialización
-    const timeoutId = setTimeout(() => {
+    // Timeout de seguridad más agresivo
+    const safetyTimeout = setTimeout(() => {
       if (!initialized && isMounted) {
-        console.warn('La inicialización está tardando demasiado, forzando renderizado');
+        console.warn('Timeout de seguridad activado, forzando inicialización');
         setLoading(false);
         setInitialized(true);
+        setUser(null);
       }
-    }, 3000); // 3 segundos máximo para inicializar
+    }, 3000);
 
     initAuth();
 
-    // Limpieza
     return () => {
       isMounted = false;
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
+      clearTimeout(safetyTimeout);
     };
-  }, []);
+  }, []); // Solo ejecutar una vez
 
   // Escucha cambios en el estado de autenticación
   useEffect(() => {
     if (!initialized) return;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      switch (event) {
-        case 'SIGNED_IN':
-          await refreshUser();
-          break;
-        case 'SIGNED_OUT':
-          setUser(null);
-          break;
-        case 'TOKEN_REFRESHED':
-        case 'USER_UPDATED':
-          await refreshUser();
-          break;
-      }
-    });
+    let subscription;
+    
+    try {
+      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth state change:', event);
+        
+        switch (event) {
+          case 'SIGNED_IN':
+            await refreshUser();
+            break;
+          case 'SIGNED_OUT':
+            setUser(null);
+            break;
+          case 'TOKEN_REFRESHED':
+          case 'USER_UPDATED':
+            await refreshUser();
+            break;
+        }
+      });
+      
+      subscription = data.subscription;
+    } catch (error) {
+      console.error('Error setting up auth listener:', error);
+    }
 
     return () => {
       subscription?.unsubscribe();
@@ -119,13 +144,21 @@ export const AuthProvider = ({ children }) => {
     isAdmin: user?.is_admin || false
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {initialized ? children : (
-        <div className="flex items-center justify-center h-screen">
+  // Renderizar loading solo si realmente está cargando y no ha pasado mucho tiempo
+  if (!initialized) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
     </AuthContext.Provider>
   );
 };

@@ -29,8 +29,16 @@ const AuthRedirectMiddleware = () => {
         if (code) {
           setIsProcessing(true);
           
-          // Verificar si tenemos una sesión válida
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          // Timeout para evitar cuelgues
+          const sessionPromise = supabase.auth.getSession();
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Session timeout')), 10000);
+          });
+          
+          const { data: { session }, error: sessionError } = await Promise.race([
+            sessionPromise,
+            timeoutPromise
+          ]);
           
           if (sessionError) {
             throw sessionError;
