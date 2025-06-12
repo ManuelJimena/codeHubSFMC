@@ -1,5 +1,5 @@
 import React, { useState, useEffect, memo, useCallback } from 'react';
-import { supabase, testSupabaseConnection } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
 const DebugInfo = memo(({ alwaysVisible = false }) => {
@@ -9,14 +9,13 @@ const DebugInfo = memo(({ alwaysVisible = false }) => {
     supabaseConnected: 'Comprobando...',
     env: {},
     authStatus: 'Comprobando...',
-    browserInfo: {},
-    connectionTest: 'No probado'
+    browserInfo: {}
   });
 
   const checkSupabaseConnection = useCallback(async () => {
     try {
-      const isConnected = await testSupabaseConnection();
-      return isConnected ? 'Conectado' : 'Error de conexión';
+      const { error } = await supabase.from('profiles').select('id').limit(1);
+      return error ? `Error: ${error.message}` : 'Conectado';
     } catch (err) {
       return `Error: ${err.message}`;
     }
@@ -32,21 +31,6 @@ const DebugInfo = memo(({ alwaysVisible = false }) => {
     }
   }, []);
 
-  const testConnection = useCallback(async () => {
-    try {
-      const result = await testSupabaseConnection();
-      setInfo(prev => ({
-        ...prev,
-        connectionTest: result ? 'Conexión exitosa' : 'Conexión fallida'
-      }));
-    } catch (error) {
-      setInfo(prev => ({
-        ...prev,
-        connectionTest: `Error: ${error.message}`
-      }));
-    }
-  }, []);
-
   useEffect(() => {
     const getInfo = async () => {
       const supabaseConnected = await checkSupabaseConnection();
@@ -57,8 +41,6 @@ const DebugInfo = memo(({ alwaysVisible = false }) => {
         env: {
           'VITE_SUPABASE_URL': import.meta.env.VITE_SUPABASE_URL ? 'Configurado' : 'No configurado',
           'VITE_SUPABASE_ANON_KEY': import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Configurado' : 'No configurado',
-          'NODE_ENV': import.meta.env.MODE,
-          'BASE_URL': import.meta.env.BASE_URL
         },
         authStatus,
         browserInfo: {
@@ -66,9 +48,7 @@ const DebugInfo = memo(({ alwaysVisible = false }) => {
           language: navigator.language,
           cookiesEnabled: navigator.cookieEnabled,
           localStorage: typeof localStorage !== 'undefined' ? 'Disponible' : 'No disponible',
-          online: navigator.onLine ? 'En línea' : 'Sin conexión'
-        },
-        connectionTest: 'No probado'
+        }
       });
     };
 
@@ -91,13 +71,6 @@ const DebugInfo = memo(({ alwaysVisible = false }) => {
         <div className="mb-2">
           <h4 className="font-semibold text-gray-800 dark:text-gray-300">Supabase</h4>
           <p className="text-sm text-gray-600 dark:text-gray-400">Estado de conexión: {info.supabaseConnected}</p>
-          <p className="text-sm text-gray-600 dark:text-gray-400">Test de conexión: {info.connectionTest}</p>
-          <button 
-            onClick={testConnection}
-            className="mt-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Probar conexión
-          </button>
         </div>
         
         <div className="mb-2">
@@ -144,13 +117,6 @@ const DebugInfo = memo(({ alwaysVisible = false }) => {
           <div className="mb-2">
             <h4 className="font-semibold">Supabase</h4>
             <p>Estado de conexión: {info.supabaseConnected}</p>
-            <p>Test de conexión: {info.connectionTest}</p>
-            <button 
-              onClick={testConnection}
-              className="mt-1 px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Probar conexión
-            </button>
           </div>
           
           <div className="mb-2">

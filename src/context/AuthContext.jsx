@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
         // Timeout más corto para evitar cargas infinitas
         const authPromise = refreshUser();
         const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error('Auth timeout')), 3000); // Reducido a 3 segundos
+          timeoutId = setTimeout(() => reject(new Error('Auth timeout')), 5000);
         });
         
         const currentUser = await Promise.race([authPromise, timeoutPromise]);
@@ -66,11 +66,6 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
           setInitialized(true);
           console.log('Inicialización de AuthContext completada con errores');
-          
-          // Mostrar toast de error solo si es un error de red
-          if (error.message.includes('fetch') || error.message.includes('timeout')) {
-            toast.error('Problema de conexión. Verifica tu internet y recarga la página.');
-          }
         }
       }
     };
@@ -82,9 +77,8 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
         setInitialized(true);
         setUser(null);
-        toast.error('Problema de conexión. Por favor, recarga la página.');
       }
-    }, 2000); // Reducido a 2 segundos
+    }, 3000);
 
     initAuth();
 
@@ -156,10 +150,7 @@ export const AuthProvider = ({ children }) => {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Conectando...</p>
-          <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">
-            Si esto tarda mucho, verifica tu conexión a internet
-          </p>
+          <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
         </div>
       </div>
     );

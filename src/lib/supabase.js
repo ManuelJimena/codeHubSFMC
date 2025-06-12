@@ -8,12 +8,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Faltan variables de entorno de Supabase');
 }
 
-// Log para debugging (solo en desarrollo)
-if (import.meta.env.DEV) {
-  console.log('Supabase URL:', supabaseUrl);
-  console.log('Supabase Anon Key:', supabaseAnonKey ? 'Configurado' : 'No configurado');
-}
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
@@ -21,30 +15,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     storage: window.localStorage,
     flowType: 'pkce'
-  },
-  global: {
-    fetch: (url, options = {}) => {
-      // Añadir timeout y mejor manejo de errores
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
-      
-      return fetch(url, {
-        ...options,
-        signal: controller.signal,
-        headers: {
-          ...options.headers,
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      }).finally(() => {
-        clearTimeout(timeoutId);
-      }).catch(error => {
-        if (error.name === 'AbortError') {
-          throw new Error('Timeout: La conexión con Supabase tardó demasiado');
-        }
-        throw error;
-      });
-    }
   }
 });
 
@@ -120,10 +90,10 @@ export const getCurrentUser = async () => {
   try {
     console.log('Obteniendo sesión de usuario...');
     
-    // Timeout más corto para evitar cuelgues
+    // Timeout para evitar cuelgues
     const sessionPromise = supabase.auth.getSession();
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Session timeout')), 5000); // Reducido a 5 segundos
+      setTimeout(() => reject(new Error('Session timeout')), 8000);
     });
     
     const { data: { session }, error: sessionError } = await Promise.race([
@@ -144,7 +114,7 @@ export const getCurrentUser = async () => {
     console.log('Sesión activa encontrada para:', session.user.email);
 
     try {
-      // Get user profile con timeout más corto
+      // Get user profile con timeout
       const profilePromise = supabase
         .from('profiles')
         .select('*')
@@ -152,7 +122,7 @@ export const getCurrentUser = async () => {
         .single();
         
       const profileTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile timeout')), 3000); // Reducido a 3 segundos
+        setTimeout(() => reject(new Error('Profile timeout')), 5000);
       });
 
       const { data: profile, error: profileError } = await Promise.race([
@@ -236,27 +206,5 @@ export const signOut = async () => {
   } catch (error) {
     console.error('Error during sign out:', error);
     throw error;
-  }
-};
-
-// Función para probar la conectividad con Supabase
-export const testSupabaseConnection = async () => {
-  try {
-    console.log('Probando conexión con Supabase...');
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('count')
-      .limit(1);
-    
-    if (error) {
-      console.error('Error de conexión:', error);
-      return false;
-    }
-    
-    console.log('Conexión con Supabase exitosa');
-    return true;
-  } catch (error) {
-    console.error('Error al probar conexión:', error);
-    return false;
   }
 };
