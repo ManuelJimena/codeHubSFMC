@@ -30,24 +30,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Verificación inicial de sesión con timeout muy aumentado
+  // Verificación inicial de sesión sin timeouts
   useEffect(() => {
     let isMounted = true;
-    let timeoutId;
     
     const initAuth = async () => {
       try {
         console.log('Iniciando autenticación...');
         
-        // Timeout muy aumentado para conexiones lentas (3 minutos)
-        const authPromise = refreshUser();
-        const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error('Auth timeout')), 180000);
-        });
-        
-        const currentUser = await Promise.race([authPromise, timeoutPromise]);
-        
-        if (timeoutId) clearTimeout(timeoutId);
+        // Sin timeout - permitir que tome el tiempo necesario
+        const currentUser = await refreshUser();
         
         console.log('Estado de usuario:', currentUser ? 'Autenticado' : 'No autenticado');
         
@@ -57,11 +49,10 @@ export const AuthProvider = ({ children }) => {
           console.log('Inicialización de AuthContext completada');
         }
       } catch (error) {
-        if (timeoutId) clearTimeout(timeoutId);
         console.error('Error initializing auth:', error);
         
         if (isMounted) {
-          // En caso de error o timeout, marcar como inicializado de todos modos
+          // En caso de error, marcar como inicializado de todos modos
           setUser(null);
           setLoading(false);
           setInitialized(true);
@@ -70,7 +61,7 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Timeout de seguridad muy aumentado (5 minutos)
+    // Timeout de seguridad solo como último recurso (10 minutos)
     const safetyTimeout = setTimeout(() => {
       if (!initialized && isMounted) {
         console.warn('Timeout de seguridad activado, forzando inicialización');
@@ -78,13 +69,12 @@ export const AuthProvider = ({ children }) => {
         setInitialized(true);
         setUser(null);
       }
-    }, 300000);
+    }, 600000); // 10 minutos
 
     initAuth();
 
     return () => {
       isMounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
       clearTimeout(safetyTimeout);
     };
   }, []); // Solo ejecutar una vez

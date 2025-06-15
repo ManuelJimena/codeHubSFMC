@@ -90,16 +90,8 @@ export const getCurrentUser = async () => {
   try {
     console.log('Obteniendo sesión de usuario...');
     
-    // Timeout muy aumentado para conexiones lentas (2 minutos)
-    const sessionPromise = supabase.auth.getSession();
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Session timeout')), 120000);
-    });
-    
-    const { data: { session }, error: sessionError } = await Promise.race([
-      sessionPromise,
-      timeoutPromise
-    ]);
+    // Sin timeout - permitir que tome el tiempo necesario
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     if (sessionError) {
       console.error('Error al obtener la sesión:', sessionError);
@@ -114,21 +106,12 @@ export const getCurrentUser = async () => {
     console.log('Sesión activa encontrada para:', session.user.email);
 
     try {
-      // Get user profile con timeout muy aumentado (90 segundos)
-      const profilePromise = supabase
+      // Get user profile sin timeout - permitir que tome el tiempo necesario
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
         .single();
-        
-      const profileTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile timeout')), 90000);
-      });
-
-      const { data: profile, error: profileError } = await Promise.race([
-        profilePromise,
-        profileTimeoutPromise
-      ]);
 
       if (profileError && profileError.code !== 'PGRST116') {
         console.error('Error al obtener el perfil:', profileError);
