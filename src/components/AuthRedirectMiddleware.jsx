@@ -29,10 +29,10 @@ const AuthRedirectMiddleware = () => {
         if (code) {
           setIsProcessing(true);
           
-          // Timeout para evitar cuelgues
+          // Timeout aumentado para evitar cuelgues
           const sessionPromise = supabase.auth.getSession();
           const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Session timeout')), 10000);
+            setTimeout(() => reject(new Error('Session timeout')), 15000);
           });
           
           const { data: { session }, error: sessionError } = await Promise.race([
