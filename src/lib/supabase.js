@@ -90,10 +90,10 @@ export const getCurrentUser = async () => {
   try {
     console.log('Obteniendo sesión de usuario...');
     
-    // Timeout aumentado para evitar cuelgues prematuros
+    // Timeout muy aumentado para conexiones lentas (2 minutos)
     const sessionPromise = supabase.auth.getSession();
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Session timeout')), 15000);
+      setTimeout(() => reject(new Error('Session timeout')), 120000);
     });
     
     const { data: { session }, error: sessionError } = await Promise.race([
@@ -114,7 +114,7 @@ export const getCurrentUser = async () => {
     console.log('Sesión activa encontrada para:', session.user.email);
 
     try {
-      // Get user profile con timeout aumentado
+      // Get user profile con timeout muy aumentado (90 segundos)
       const profilePromise = supabase
         .from('profiles')
         .select('*')
@@ -122,7 +122,7 @@ export const getCurrentUser = async () => {
         .single();
         
       const profileTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Profile timeout')), 10000);
+        setTimeout(() => reject(new Error('Profile timeout')), 90000);
       });
 
       const { data: profile, error: profileError } = await Promise.race([

@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Verificación inicial de sesión con timeout aumentado
+  // Verificación inicial de sesión con timeout muy aumentado
   useEffect(() => {
     let isMounted = true;
     let timeoutId;
@@ -39,10 +39,10 @@ export const AuthProvider = ({ children }) => {
       try {
         console.log('Iniciando autenticación...');
         
-        // Timeout aumentado para evitar cargas infinitas
+        // Timeout muy aumentado para conexiones lentas (3 minutos)
         const authPromise = refreshUser();
         const timeoutPromise = new Promise((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error('Auth timeout')), 15000);
+          timeoutId = setTimeout(() => reject(new Error('Auth timeout')), 180000);
         });
         
         const currentUser = await Promise.race([authPromise, timeoutPromise]);
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Timeout de seguridad aumentado
+    // Timeout de seguridad muy aumentado (5 minutos)
     const safetyTimeout = setTimeout(() => {
       if (!initialized && isMounted) {
         console.warn('Timeout de seguridad activado, forzando inicialización');
@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }) => {
         setInitialized(true);
         setUser(null);
       }
-    }, 15000);
+    }, 300000);
 
     initAuth();
 
