@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { withAuthLock } from '../lib/authLock.js';
 import { KeyRound, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -23,9 +24,11 @@ function ResetPasswordPage() {
       console.log('URL de redirección:', redirectUrl);
       console.log('Enviando correo a:', email);
       
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl,
-      });
+      const { error } = await withAuthLock(() =>
+        supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: redirectUrl,
+        })
+      );
       
       if (error) {
         console.error('Error de Supabase al resetear contraseña:', error);

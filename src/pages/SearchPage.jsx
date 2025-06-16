@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { withAuthLock } from '../lib/authLock.js';
 import CodeCard from '../components/CodeCard';
 import { Search as SearchIcon } from 'lucide-react';
 
@@ -16,7 +17,7 @@ const SearchPage = () => {
   }, []);
 
   const fetchUserFavorites = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await withAuthLock(() => supabase.auth.getUser());
     
     if (user) {
       const { data, error } = await supabase
@@ -67,7 +68,7 @@ const SearchPage = () => {
   };
 
   const handleToggleFavorite = async (snippetId) => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await withAuthLock(() => supabase.auth.getUser());
     
     if (!user) {
       // Redirect to login or show a message

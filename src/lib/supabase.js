@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { withAuthLock } from './authLock.js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -126,7 +127,7 @@ export const getCurrentUser = async () => {
     
     // Operación con timeout y reintentos
     const sessionOperation = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await withAuthLock(() => supabase.auth.getSession());
       
       if (sessionError) {
         console.error('Error al obtener la sesión:', sessionError);
@@ -245,7 +246,7 @@ export const getCurrentUser = async () => {
       console.log('Timeout detectado, limpiando estado...');
       try {
         // Intentar refrescar la sesión
-        await supabase.auth.refreshSession();
+        await withAuthLock(() => supabase.auth.refreshSession());
       } catch (refreshError) {
         console.error('Error al refrescar sesión:', refreshError);
       }
@@ -257,7 +258,7 @@ export const getCurrentUser = async () => {
 
 export const signOut = async () => {
   try {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await withAuthLock(() => supabase.auth.signOut());
     if (error) throw error;
     
     // Clear all local storage

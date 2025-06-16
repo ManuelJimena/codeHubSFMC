@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { withAuthLock } from '../lib/authLock.js';
 import toast from 'react-hot-toast';
 
 const AuthRedirectMiddleware = () => {
@@ -30,7 +31,7 @@ const AuthRedirectMiddleware = () => {
           setIsProcessing(true);
           
           // Timeout aumentado para evitar cuelgues
-          const sessionPromise = supabase.auth.getSession();
+          const sessionPromise = withAuthLock(() => supabase.auth.getSession());
           const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Session timeout')), 15000);
           });
@@ -102,10 +103,12 @@ const AuthRedirectMiddleware = () => {
           }
           
           // Establecer la sesión con los tokens explícitamente
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken
-          });
+          const { data, error } = await withAuthLock(() =>
+            supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            })
+          );
           
           if (error) {
             throw error;

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, getCurrentUser } from '../lib/supabase';
+import { withAuthLock } from '../lib/authLock.js';
 import toast from 'react-hot-toast';
 
 // Crear contexto y hook
@@ -88,7 +89,8 @@ export const AuthProvider = ({ children }) => {
     let subscription;
     
     try {
-      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const { data } = await withAuthLock(() =>
+        supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth state change:', event);
         
         switch (event) {
@@ -103,7 +105,8 @@ export const AuthProvider = ({ children }) => {
             await refreshUser();
             break;
         }
-      });
+        })
+      );
       
       subscription = data.subscription;
     } catch (error) {
@@ -117,7 +120,7 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await withAuthLock(() => supabase.auth.signOut());
       setUser(null);
       window.localStorage.clear();
       toast.success('Sesión cerrada correctamente');

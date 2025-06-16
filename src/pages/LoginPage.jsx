@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { withAuthLock } from '../lib/authLock.js';
 import { LogIn } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -22,13 +23,13 @@ const LoginPage = () => {
     
     // Verificar si hay una sesión activa no deseada (de un enlace de recuperación fallido)
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await withAuthLock(() => supabase.auth.getSession());
       if (session) {
         console.log('Sesión activa detectada en LoginPage, limpiando...');
         // Si estamos en la página de login pero hay una sesión activa, es probable que sea
         // resultado de un enlace de recuperación que no completó el flujo correctamente.
         // Cerramos la sesión para limpiar el estado.
-        await supabase.auth.signOut();
+        await withAuthLock(() => supabase.auth.signOut());
         window.localStorage.clear();
       }
     };
@@ -41,10 +42,12 @@ const LoginPage = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { error } = await withAuthLock(() =>
+        supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+      );
 
       if (error) throw error;
 

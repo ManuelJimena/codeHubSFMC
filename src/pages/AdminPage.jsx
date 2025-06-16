@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { withAuthLock } from '../lib/authLock.js';
 import { Users, Code, Shield, Key, Bug } from 'lucide-react';
 import DebugInfo from '../components/DebugInfo';
 import toast from 'react-hot-toast';
@@ -27,7 +28,7 @@ const AdminPage = () => {
   }, [activeTab]);
 
   const checkAdminAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await withAuthLock(() => supabase.auth.getUser());
     
     if (!user) {
       navigate('/login');

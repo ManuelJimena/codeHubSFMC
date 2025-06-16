@@ -1,5 +1,6 @@
 import React, { useState, useEffect, memo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { withAuthLock } from '../lib/authLock.js';
 import { useAuth } from '../context/AuthContext';
 
 const DebugInfo = memo(({ alwaysVisible = false }) => {
@@ -23,7 +24,7 @@ const DebugInfo = memo(({ alwaysVisible = false }) => {
 
   const checkAuthStatus = useCallback(async () => {
     try {
-      const { data, error } = await supabase.auth.getSession();
+      const { data, error } = await withAuthLock(() => supabase.auth.getSession());
       if (error) return `Error: ${error.message}`;
       return data.session ? `Autenticado como ${data.session.user.email}` : 'No autenticado';
     } catch (err) {

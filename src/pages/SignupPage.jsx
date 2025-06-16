@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { withAuthLock } from '../lib/authLock.js';
 import { UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
@@ -32,13 +33,15 @@ function SignupPage() {
       }
 
       // Crear usuario de autenticación
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { username }
-        }
-      });
+      const { data: authData, error: signUpError } = await withAuthLock(() =>
+        supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { username }
+          }
+        })
+      );
 
       if (signUpError) throw signUpError;
 

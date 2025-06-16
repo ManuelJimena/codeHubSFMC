@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { withAuthLock } from '../lib/authLock.js';
 import { KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -15,7 +16,7 @@ const UpdatePasswordPage = () => {
   useEffect(() => {
     const checkSessionAndUpdate = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await withAuthLock(() => supabase.auth.getSession());
         
         if (error) {
           throw error;
@@ -76,7 +77,7 @@ const UpdatePasswordPage = () => {
 
     try {
       // Verificar sesión activa
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await withAuthLock(() => supabase.auth.getSession());
       
       if (sessionError) {
         throw sessionError;
@@ -110,7 +111,7 @@ const UpdatePasswordPage = () => {
       toast.success('Contraseña actualizada correctamente', { duration: 5000 });
       
       // Cerrar sesión de manera segura
-      await supabase.auth.signOut();
+      await withAuthLock(() => supabase.auth.signOut());
       window.localStorage.clear();
       
       // Mostrar mensaje y redirigir

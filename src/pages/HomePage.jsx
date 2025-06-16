@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { withAuthLock } from '../lib/authLock.js';
 import { Code, Save, Share2, Star, Bot, Heart } from 'lucide-react';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
@@ -13,7 +14,7 @@ const HomePage = () => {
   // Manejar redirecciones de autenticación
   useEffect(() => {
     const handleAuthRedirect = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await withAuthLock(() => supabase.auth.getSession());
       const params = new URLSearchParams(location.search);
       const isRecovery = params.get('type') === 'recovery';
 
