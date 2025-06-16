@@ -65,7 +65,8 @@ const CreateSnippetPage = () => {
         user_id: user.id
       });
 
-      const { data: snippet, error } = await supabase
+      // Crear una promesa con timeout para evitar carga infinita
+      const createSnippetPromise = supabase
         .from('snippets')
         .insert([{
           title: title.trim(),
@@ -78,6 +79,16 @@ const CreateSnippetPage = () => {
         .select()
         .single();
 
+      // Timeout de 30 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout: La operación está tardando demasiado')), 30000);
+      });
+
+      const { data: snippet, error } = await Promise.race([
+        createSnippetPromise,
+        timeoutPromise
+      ]);
+
       if (error || !snippet) {
         throw new Error(error?.message || 'No se pudo crear el fragmento de código');
       }
@@ -88,7 +99,12 @@ const CreateSnippetPage = () => {
       navigate(`/snippet/${snippet.id}`);
     } catch (error) {
       console.error('Error creating snippet:', error);
-      toast.error(error.message || 'Error al crear el fragmento de código');
+      
+      if (error.message.includes('Timeout')) {
+        toast.error('La operación está tardando demasiado. Por favor, intenta de nuevo.');
+      } else {
+        toast.error(error.message || 'Error al crear el fragmento de código');
+      }
     } finally {
       setLoading(false);
     }

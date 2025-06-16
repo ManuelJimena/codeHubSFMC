@@ -127,9 +127,12 @@ const AIPage = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('connecting'); // 'connecting', 'connected', 'error'
+  const [showConnectionMessage, setShowConnectionMessage] = useState(false);
 
   const chatContainerRef = useRef(null);
   const textareaRef = useRef(null);
+  const connectionTimeoutRef = useRef(null);
 
   // ─────────────────────────────────────
   // Auto‑scroll del contenedor de chat
@@ -152,10 +155,18 @@ const AIPage = () => {
       }
 
       try {
+        setConnectionStatus('connecting');
+        
+        // Mostrar mensaje de conexión solo después de 5 segundos
+        connectionTimeoutRef.current = setTimeout(() => {
+          if (connectionStatus === 'connecting') {
+            setShowConnectionMessage(true);
+          }
+        }, 5000);
+
         const keys = await getApiKeys();
         if (!keys) {
-          toast.error('Error al obtener las claves de API');
-          return;
+          throw new Error('Error al obtener las claves de API');
         }
 
         client = new OpenAI({
@@ -168,10 +179,24 @@ const AIPage = () => {
           }
         });
 
+        setConnectionStatus('connected');
         setIsInitialized(true);
+        setShowConnectionMessage(false);
+        
+        // Limpiar timeout
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+        }
       } catch (error) {
         console.error('Error initializing OpenAI client:', error);
+        setConnectionStatus('error');
+        setShowConnectionMessage(true);
         toast.error('Error al inicializar el cliente de IA');
+        
+        // Limpiar timeout
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+        }
       }
     };
 
@@ -185,6 +210,13 @@ const AIPage = () => {
     };
 
     setGreeting(getGreeting());
+
+    // Cleanup
+    return () => {
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+      }
+    };
   }, [user, navigate]);
 
   // ─────────────────────────────────────
@@ -219,33 +251,34 @@ const AIPage = () => {
     try {
       const completion = await client.chat.completions.create({
         model: 'openai/gpt-3.5-turbo',
-  messages: [
-    {
-      role: 'system',
-      content: `Eres SFMC‑AI, un asistente senior especializado en Salesforce Marketing Cloud.
+        messages: [
+          {
+            role: 'system',
+            content: `Eres SFMC‑AI, un asistente senior especializado en Salesforce Marketing Cloud.
 Tu experiencia principal es:
 • AMPscript avanzado para Email y CloudPages
-• Server‑Side JavaScript (SSJS) en Scripts Activities y CloudPages
-• SQL para Query Activities y Data Views
+• Server‑Side JavaScript (SSJS) en Scripts Activities y CloudPages
+• SQL para Query Activities y Data Views
 Responde siempre en español neutro.
 Cuando proporciones código:
   – Usa el lenguaje correcto tras \`\`\` (ej. \`\`\`ssjs, \`\`\`sql, \`\`\`ampscript).
   – Incluye comentarios breves dentro del bloque si ayudan a entenderlo.
   – No añadas texto fuera de los bloques salvo explicación o pasos de uso.
 Sé breve y directo; evita relleno, disculpas y divagaciones.`
-    },
-    ...messages.map((msg) => ({
-      role: msg.role,
-      content: msg.content
-    })),
-    { role: 'user', content: userMessage }
-  ],
-  temperature: 0.25,
-  top_p: 1,
-  max_tokens: 1000,
-  frequency_penalty: 0.2,
-  presence_penalty: 0,
-});
+          },
+          ...messages.map((msg) => ({
+            role: msg.role,
+            content: msg.content
+          })),
+          { role: 'user', content: userMessage }
+        ],
+        temperature: 0.25,
+        top_p: 1,
+        max_tokens: 1000,
+        frequency_penalty: 0.2,
+        presence_penalty: 0,
+      });
+      
       if (completion.choices?.[0]?.message?.content) {
         const assistantMessage = completion.choices[0].message.content;
         setMessages((prev) => [
@@ -321,39 +354,49 @@ Sé breve y directo; evita relleno, disculpas y divagaciones.`
             <form onSubmit={handleSubmit} className="mb-4">
               {/* Contenedor relativo para colocar el botón flotante */}
               <div className="relative">
-               <textarea
-  ref={textareaRef}
-  value={input}
-  onChange={handleInputChange}
-  onKeyDown={handleKeyDown}
-  placeholder="Escribe tu pregunta..."
-  className="block w-full px-4 py-2 pr-20 border border-gray-300 dark:border-gray-600
-           rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
-           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-           resize-none overflow-y-auto" 
-  disabled={isLoading}
-  rows={1}
-  style={{ minHeight: '42px', maxHeight: '200px' }}
-  aria-label="Caja de mensaje para el chat"
-/>
+                <textarea
+                  ref={textareaRef}
+                  value={input}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Escribe tu pregunta..."
+                  className="block w-full px-4 py-2 pr-20 border border-gray-300 dark:border-gray-600
+                           rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400
+                           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                           resize-none overflow-y-auto" 
+                  disabled={isLoading}
+                  rows={1}
+                  style={{ minHeight: '42px', maxHeight: '200px' }}
+                  aria-label="Caja de mensaje para el chat"
+                />
                 {/* Botón */}
-               <button
-  type="submit"
-  disabled={isLoading || !input.trim() || !isInitialized}
-  className="absolute right-6 bottom-1 h-8 w-8 flex items-center justify-center
-           bg-blue-500 text-white rounded-full hover:bg-blue-600
-           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-           dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-  title="Enviar"
->
-  <Send className="h-4 w-4" />
-</button>
+                <button
+                  type="submit"
+                  disabled={isLoading || !input.trim() || !isInitialized}
+                  className="absolute right-6 bottom-1 h-8 w-8 flex items-center justify-center
+                           bg-blue-500 text-white rounded-full hover:bg-blue-600
+                           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                           dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Enviar"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
               </div>
-              {!isInitialized && (
-                <p className="mt-2 text-sm text-red-500">
-                  Conectando con el servicio de IA… Puedes escribir, pero el
-                  envío se habilitará en unos segundos.
-                </p>
+              
+              {/* Mensaje de estado de conexión */}
+              {showConnectionMessage && (
+                <div className="mt-2">
+                  {connectionStatus === 'connecting' && (
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400">
+                      Conectando con el servicio de IA... Esto puede tomar unos momentos.
+                    </p>
+                  )}
+                  {connectionStatus === 'error' && (
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                      Error al conectar con el servicio de IA. Por favor, recarga la página.
+                    </p>
+                  )}
+                </div>
               )}
             </form>
 

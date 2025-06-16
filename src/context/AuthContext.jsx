@@ -30,20 +30,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Verificación inicial de sesión sin timeouts
+  // Verificación inicial de sesión
   useEffect(() => {
     let isMounted = true;
+    let initTimeout;
     
     const initAuth = async () => {
       try {
         console.log('Iniciando autenticación...');
         
-        // Sin timeout - permitir que tome el tiempo necesario
-        const currentUser = await refreshUser();
+        const currentUser = await getCurrentUser();
         
         console.log('Estado de usuario:', currentUser ? 'Autenticado' : 'No autenticado');
         
         if (isMounted) {
+          setUser(currentUser);
           setLoading(false);
           setInitialized(true);
           console.log('Inicialización de AuthContext completada');
@@ -52,7 +53,6 @@ export const AuthProvider = ({ children }) => {
         console.error('Error initializing auth:', error);
         
         if (isMounted) {
-          // En caso de error, marcar como inicializado de todos modos
           setUser(null);
           setLoading(false);
           setInitialized(true);
@@ -61,21 +61,23 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Timeout de seguridad solo como último recurso (10 minutos)
-    const safetyTimeout = setTimeout(() => {
+    // Timeout de seguridad más largo pero solo como último recurso
+    initTimeout = setTimeout(() => {
       if (!initialized && isMounted) {
         console.warn('Timeout de seguridad activado, forzando inicialización');
         setLoading(false);
         setInitialized(true);
         setUser(null);
       }
-    }, 600000); // 10 minutos
+    }, 60000); // 1 minuto
 
     initAuth();
 
     return () => {
       isMounted = false;
-      clearTimeout(safetyTimeout);
+      if (initTimeout) {
+        clearTimeout(initTimeout);
+      }
     };
   }, []); // Solo ejecutar una vez
 

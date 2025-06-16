@@ -86,17 +86,62 @@ export const deleteAvatar = async (url) => {
   }
 };
 
+// Función para crear un timeout cancelable
+const createCancelableTimeout = (promise, timeoutMs, errorMessage) => {
+  let timeoutId;
+  
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+
+  return Promise.race([
+    promise.finally(() => clearTimeout(timeoutId)),
+    timeoutPromise
+  ]);
+};
+
+// Función para reintentar operaciones con backoff exponencial
+const retryWithBackoff = async (operation, maxRetries = 3, baseDelay = 1000) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Backoff exponencial: 1s, 2s, 4s
+      const delay = baseDelay * Math.pow(2, attempt - 1);
+      console.log(`Intento ${attempt} falló, reintentando en ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+};
+
 export const getCurrentUser = async () => {
   try {
     console.log('Obteniendo sesión de usuario...');
     
-    // Sin timeout - permitir que tome el tiempo necesario
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError) {
-      console.error('Error al obtener la sesión:', sessionError);
-      throw sessionError;
-    }
+    // Operación con timeout y reintentos
+    const sessionOperation = async () => {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('Error al obtener la sesión:', sessionError);
+        throw sessionError;
+      }
+      
+      return session;
+    };
+
+    // Timeout de 30 segundos para la sesión
+    const session = await createCancelableTimeout(
+      retryWithBackoff(sessionOperation, 2, 1000),
+      30000,
+      'Timeout al obtener la sesión'
+    );
     
     if (!session?.user) {
       console.log('No hay sesión de usuario activa');
@@ -106,17 +151,28 @@ export const getCurrentUser = async () => {
     console.log('Sesión activa encontrada para:', session.user.email);
 
     try {
-      // Get user profile sin timeout - permitir que tome el tiempo necesario
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
+      // Operación para obtener el perfil con timeout y reintentos
+      const profileOperation = async () => {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
 
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Error al obtener el perfil:', profileError);
-        throw profileError;
-      }
+        if (profileError && profileError.code !== 'PGRST116') {
+          console.error('Error al obtener el perfil:', profileError);
+          throw profileError;
+        }
+
+        return profile;
+      };
+
+      // Timeout de 20 segundos para el perfil
+      const profile = await createCancelableTimeout(
+        retryWithBackoff(profileOperation, 2, 1000),
+        20000,
+        'Timeout al obtener el perfil'
+      );
 
       // If profile doesn't exist, create it
       if (!profile) {
@@ -124,21 +180,32 @@ export const getCurrentUser = async () => {
         const isAdmin = session.user.email === 'manuel.jimena29@gmail.com';
         
         try {
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert([{
-              id: session.user.id,
-              email: session.user.email,
-              username: session.user.email.split('@')[0],
-              is_admin: isAdmin
-            }])
-            .select()
-            .single();
+          const createProfileOperation = async () => {
+            const { data: newProfile, error: createError } = await supabase
+              .from('profiles')
+              .insert([{
+                id: session.user.id,
+                email: session.user.email,
+                username: session.user.email.split('@')[0],
+                is_admin: isAdmin
+              }])
+              .select()
+              .single();
 
-          if (createError) {
-            console.error('Error al crear el perfil:', createError);
-            throw createError;
-          }
+            if (createError) {
+              console.error('Error al crear el perfil:', createError);
+              throw createError;
+            }
+            
+            return newProfile;
+          };
+
+          // Timeout de 15 segundos para crear perfil
+          const newProfile = await createCancelableTimeout(
+            retryWithBackoff(createProfileOperation, 2, 1000),
+            15000,
+            'Timeout al crear el perfil'
+          );
           
           console.log('Perfil creado correctamente');
           return {
@@ -172,6 +239,18 @@ export const getCurrentUser = async () => {
     }
   } catch (error) {
     console.error('Error general al obtener usuario actual:', error);
+    
+    // Si es un error de timeout, intentar limpiar el estado
+    if (error.message.includes('Timeout')) {
+      console.log('Timeout detectado, limpiando estado...');
+      try {
+        // Intentar refrescar la sesión
+        await supabase.auth.refreshSession();
+      } catch (refreshError) {
+        console.error('Error al refrescar sesión:', refreshError);
+      }
+    }
+    
     return null;
   }
 };
