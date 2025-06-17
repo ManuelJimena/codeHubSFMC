@@ -157,7 +157,7 @@ const AIPage = () => {
       try {
         setConnectionStatus('connecting');
         
-        // Mostrar mensaje de conexión solo después de 5 segundos
+        // SOLO mostrar mensaje después de 5 segundos si no ha conectado
         connectionTimeoutRef.current = setTimeout(() => {
           if (connectionStatus === 'connecting') {
             setShowConnectionMessage(true);
@@ -383,7 +383,7 @@ Sé breve y directo; evita relleno, disculpas y divagaciones.`
                 </button>
               </div>
               
-              {/* Mensaje de estado de conexión */}
+              {/* Mensaje de estado de conexión - SOLO si pasan 5 segundos */}
               {showConnectionMessage && (
                 <div className="mt-2">
                   {connectionStatus === 'connecting' && (

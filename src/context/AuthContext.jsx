@@ -18,35 +18,22 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
-  // Debounce para refreshUser para evitar llamadas múltiples
-  let refreshTimeout = null;
-  
   const refreshUser = async () => {
-    // Cancelar refresh anterior si existe
-    if (refreshTimeout) {
-      clearTimeout(refreshTimeout);
+    try {
+      console.log('Refrescando usuario...');
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+      return currentUser;
+    } catch (error) {
+      console.error('Error refreshing user:', error);
+      setUser(null);
+      return null;
     }
-    
-    return new Promise((resolve) => {
-      refreshTimeout = setTimeout(async () => {
-        try {
-          console.log('Refrescando usuario...');
-          const currentUser = await getCurrentUser();
-          setUser(currentUser);
-          resolve(currentUser);
-        } catch (error) {
-          console.error('Error refreshing user:', error);
-          setUser(null);
-          resolve(null);
-        }
-      }, 100); // Debounce de 100ms
-    });
   };
 
   // Verificación inicial de sesión
   useEffect(() => {
     let isMounted = true;
-    let initTimeout;
     
     const initAuth = async () => {
       try {
@@ -74,69 +61,58 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Timeout de seguridad más conservador
-    initTimeout = setTimeout(() => {
-      if (!initialized && isMounted) {
-        console.warn('Timeout de seguridad activado, forzando inicialización');
-        setLoading(false);
-        setInitialized(true);
-        setUser(null);
-      }
-    }, 15000); // Reducido a 15 segundos
-
     initAuth();
 
     return () => {
       isMounted = false;
-      if (initTimeout) {
-        clearTimeout(initTimeout);
-      }
-      if (refreshTimeout) {
-        clearTimeout(refreshTimeout);
-      }
     };
   }, []); // Solo ejecutar una vez
 
-  // Escucha cambios en el estado de autenticación con debouncing
+  // REGLA #1: No invocar Auth dentro del callback
+  // Solo setear la sesión, nada más
   useEffect(() => {
     if (!initialized) return;
 
     let subscription;
-    let eventTimeout = null;
     
     try {
       const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth state change:', event);
         
-        // Cancelar evento anterior si existe
-        if (eventTimeout) {
-          clearTimeout(eventTimeout);
+        // CRÍTICO: Solo setear estado, NO llamar a getCurrentUser() ni otras funciones Auth
+        switch (event) {
+          case 'SIGNED_IN':
+            console.log('Usuario ha iniciado sesión');
+            // Solo setear la sesión básica, el refresh se hará desde fuera
+            if (session?.user) {
+              setUser({
+                ...session.user,
+                username: session.user.email?.split('@')[0] || 'usuario',
+                is_admin: session.user.email === 'manuel.jimena29@gmail.com'
+              });
+            }
+            break;
+          case 'SIGNED_OUT':
+            console.log('Usuario ha cerrado sesión');
+            setUser(null);
+            break;
+          case 'TOKEN_REFRESHED':
+            console.log('Token refrescado automáticamente');
+            // No hacer nada, el SDK ya maneja el refresh
+            break;
+          case 'USER_UPDATED':
+            console.log('Usuario actualizado');
+            // Solo actualizar si tenemos la información básica
+            if (session?.user) {
+              setUser(prevUser => ({
+                ...session.user,
+                ...prevUser, // Mantener datos del perfil si los tenemos
+                username: prevUser?.username || session.user.email?.split('@')[0] || 'usuario',
+                is_admin: prevUser?.is_admin || session.user.email === 'manuel.jimena29@gmail.com'
+              }));
+            }
+            break;
         }
-        
-        // Debounce para evitar múltiples llamadas rápidas
-        eventTimeout = setTimeout(async () => {
-          switch (event) {
-            case 'SIGNED_IN':
-              console.log('Usuario ha iniciado sesión');
-              await refreshUser();
-              break;
-            case 'SIGNED_OUT':
-              console.log('Usuario ha cerrado sesión');
-              setUser(null);
-              break;
-            case 'TOKEN_REFRESHED':
-              console.log('Token refrescado');
-              // Solo refrescar si no tenemos usuario o si ha pasado tiempo suficiente
-              if (!user) {
-                await refreshUser();
-              }
-              break;
-            case 'USER_UPDATED':
-              console.log('Usuario actualizado');
-              await refreshUser();
-              break;
-          }
-        }, 200); // Debounce de 200ms
       });
       
       subscription = data.subscription;
@@ -145,12 +121,9 @@ export const AuthProvider = ({ children }) => {
     }
 
     return () => {
-      if (eventTimeout) {
-        clearTimeout(eventTimeout);
-      }
       subscription?.unsubscribe();
     };
-  }, [initialized, user]);
+  }, [initialized]);
 
   const signOut = async () => {
     try {
@@ -173,7 +146,7 @@ export const AuthProvider = ({ children }) => {
     isAdmin: user?.is_admin || false
   };
 
-  // Renderizar loading solo si realmente está cargando y no ha pasado mucho tiempo
+  // Renderizar loading solo si realmente está cargando
   if (!initialized) {
     return (
       <div className="flex items-center justify-center h-screen">
