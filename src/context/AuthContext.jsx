@@ -18,16 +18,29 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
 
+  // Debounce para refreshUser para evitar llamadas múltiples
+  let refreshTimeout = null;
+  
   const refreshUser = async () => {
-    try {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-      return currentUser;
-    } catch (error) {
-      console.error('Error refreshing user:', error);
-      setUser(null);
-      return null;
+    // Cancelar refresh anterior si existe
+    if (refreshTimeout) {
+      clearTimeout(refreshTimeout);
     }
+    
+    return new Promise((resolve) => {
+      refreshTimeout = setTimeout(async () => {
+        try {
+          console.log('Refrescando usuario...');
+          const currentUser = await getCurrentUser();
+          setUser(currentUser);
+          resolve(currentUser);
+        } catch (error) {
+          console.error('Error refreshing user:', error);
+          setUser(null);
+          resolve(null);
+        }
+      }, 100); // Debounce de 100ms
+    });
   };
 
   // Verificación inicial de sesión
@@ -61,7 +74,7 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    // Timeout de seguridad más largo pero solo como último recurso
+    // Timeout de seguridad más conservador
     initTimeout = setTimeout(() => {
       if (!initialized && isMounted) {
         console.warn('Timeout de seguridad activado, forzando inicialización');
@@ -69,7 +82,7 @@ export const AuthProvider = ({ children }) => {
         setInitialized(true);
         setUser(null);
       }
-    }, 60000); // 1 minuto
+    }, 15000); // Reducido a 15 segundos
 
     initAuth();
 
@@ -78,31 +91,52 @@ export const AuthProvider = ({ children }) => {
       if (initTimeout) {
         clearTimeout(initTimeout);
       }
+      if (refreshTimeout) {
+        clearTimeout(refreshTimeout);
+      }
     };
   }, []); // Solo ejecutar una vez
 
-  // Escucha cambios en el estado de autenticación
+  // Escucha cambios en el estado de autenticación con debouncing
   useEffect(() => {
     if (!initialized) return;
 
     let subscription;
+    let eventTimeout = null;
     
     try {
       const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth state change:', event);
         
-        switch (event) {
-          case 'SIGNED_IN':
-            await refreshUser();
-            break;
-          case 'SIGNED_OUT':
-            setUser(null);
-            break;
-          case 'TOKEN_REFRESHED':
-          case 'USER_UPDATED':
-            await refreshUser();
-            break;
+        // Cancelar evento anterior si existe
+        if (eventTimeout) {
+          clearTimeout(eventTimeout);
         }
+        
+        // Debounce para evitar múltiples llamadas rápidas
+        eventTimeout = setTimeout(async () => {
+          switch (event) {
+            case 'SIGNED_IN':
+              console.log('Usuario ha iniciado sesión');
+              await refreshUser();
+              break;
+            case 'SIGNED_OUT':
+              console.log('Usuario ha cerrado sesión');
+              setUser(null);
+              break;
+            case 'TOKEN_REFRESHED':
+              console.log('Token refrescado');
+              // Solo refrescar si no tenemos usuario o si ha pasado tiempo suficiente
+              if (!user) {
+                await refreshUser();
+              }
+              break;
+            case 'USER_UPDATED':
+              console.log('Usuario actualizado');
+              await refreshUser();
+              break;
+          }
+        }, 200); // Debounce de 200ms
       });
       
       subscription = data.subscription;
@@ -111,9 +145,12 @@ export const AuthProvider = ({ children }) => {
     }
 
     return () => {
+      if (eventTimeout) {
+        clearTimeout(eventTimeout);
+      }
       subscription?.unsubscribe();
     };
-  }, [initialized]);
+  }, [initialized, user]);
 
   const signOut = async () => {
     try {

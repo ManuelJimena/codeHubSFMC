@@ -65,43 +65,80 @@ const CreateSnippetPage = () => {
         user_id: user.id
       });
 
-      // Crear una promesa con timeout para evitar carga infinita
-      const createSnippetPromise = supabase
-        .from('snippets')
-        .insert([{
-          title: title.trim(),
-          description: description.trim(),
-          code: code.trim(),
-          language,
-          is_public: isPublic,
-          user_id: user.id
-        }])
-        .select()
-        .single();
+      // Crear snippet con timeout más conservador y reintentos
+      let attempts = 0;
+      const maxAttempts = 3;
+      let snippet = null;
 
-      // Timeout de 30 segundos
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout: La operación está tardando demasiado')), 30000);
-      });
+      while (attempts < maxAttempts && !snippet) {
+        attempts++;
+        
+        try {
+          console.log(`Intento ${attempts} de ${maxAttempts} para crear snippet`);
+          
+          const createSnippetPromise = supabase
+            .from('snippets')
+            .insert([{
+              title: title.trim(),
+              description: description.trim(),
+              code: code.trim(),
+              language,
+              is_public: isPublic,
+              user_id: user.id
+            }])
+            .select()
+            .single();
 
-      const { data: snippet, error } = await Promise.race([
-        createSnippetPromise,
-        timeoutPromise
-      ]);
+          // Timeout más conservador de 15 segundos
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Timeout: La operación está tardando demasiado')), 15000);
+          });
 
-      if (error || !snippet) {
-        throw new Error(error?.message || 'No se pudo crear el fragmento de código');
+          const { data, error } = await Promise.race([
+            createSnippetPromise,
+            timeoutPromise
+          ]);
+
+          if (error) {
+            throw error;
+          }
+
+          if (!data) {
+            throw new Error('No se pudo crear el fragmento de código');
+          }
+
+          snippet = data;
+          console.log('Snippet creado exitosamente:', snippet);
+          break;
+
+        } catch (attemptError) {
+          console.error(`Error en intento ${attempts}:`, attemptError);
+          
+          if (attempts === maxAttempts) {
+            throw attemptError;
+          }
+          
+          // Esperar antes del siguiente intento (backoff exponencial)
+          const delay = Math.pow(2, attempts) * 1000; // 2s, 4s, 8s
+          console.log(`Esperando ${delay}ms antes del siguiente intento...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
 
-      console.log('Snippet creado exitosamente:', snippet);
+      if (!snippet) {
+        throw new Error('No se pudo crear el fragmento después de varios intentos');
+      }
 
       toast.success('¡Fragmento de código creado exitosamente!');
       navigate(`/snippet/${snippet.id}`);
+
     } catch (error) {
       console.error('Error creating snippet:', error);
       
       if (error.message.includes('Timeout')) {
         toast.error('La operación está tardando demasiado. Por favor, intenta de nuevo.');
+      } else if (error.message.includes('network')) {
+        toast.error('Error de conexión. Verifica tu conexión a internet.');
       } else {
         toast.error(error.message || 'Error al crear el fragmento de código');
       }
@@ -228,7 +265,8 @@ const CreateSnippetPage = () => {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
+              disabled={loading}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 disabled:opacity-50"
             >
               <X className="h-4 w-4 mr-2" />
               Cancelar
