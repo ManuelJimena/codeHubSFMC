@@ -1,35 +1,55 @@
 {
-  "name": "code-snippets-platform",
+  "name": "codehubsfmc",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "Plataforma moderna para compartir y gestionar fragmentos de código de Salesforce Marketing Cloud",
+  "keywords": ["salesforce", "marketing-cloud", "code-snippets", "sfmc", "react", "supabase"],
+  "author": "Manuel Jimena",
+  "license": "MIT",
+  "homepage": "https://code-hub-sfmc.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ManuelJimena/codehubsfmc.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --ext js,jsx --fix",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.50.0",
-    "lucide-react": "^0.344.0",
-    "openai": "^4.28.0",
+    "@supabase/supabase-js": "^2.46.1",
+    "lucide-react": "^0.460.0",
+    "openai": "^4.67.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.4.1",
-    "react-icons": "^5.5.0",
-    "react-router-dom": "^6.22.3",
-    "react-syntax-highlighter": "^15.5.0"
+    "react-icons": "^5.3.0",
+    "react-router-dom": "^6.28.0",
+    "react-syntax-highlighter": "^15.6.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.9.1",
-    "@vitejs/plugin-react": "^4.3.1",
-    "autoprefixer": "^10.4.18",
-    "eslint": "^9.9.1",
-    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
-    "eslint-plugin-react-refresh": "^0.4.11",
-    "globals": "^15.9.0",
-    "postcss": "^8.4.35",
-    "tailwindcss": "^3.4.1",
-    "vite": "^5.4.2"
+    "@eslint/js": "^9.15.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.15.0",
+    "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.14",
+    "globals": "^15.12.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }
