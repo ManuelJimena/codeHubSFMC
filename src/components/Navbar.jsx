@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 const Navbar = memo(() => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, signOut, refreshUser, isRefreshing } = useAuth();
+  const { user, signOut, refreshUser } = useAuth();
   const { darkMode, toggleTheme } = useTheme();
   const navigate = useNavigate();
   
@@ -48,57 +48,7 @@ const Navbar = memo(() => {
   
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [mobileMenuOpen]);
-
-  // Componente para mostrar avatar con fallback suave
-  const UserAvatar = memo(({ user, size = 'h-8 w-8' }) => {
-    const [imageError, setImageError] = useState(false);
-    const [imageLoading, setImageLoading] = useState(true);
-
-    // Reset error state when user changes
-    useEffect(() => {
-      setImageError(false);
-      setImageLoading(true);
-    }, [user?.avatar_url]);
-
-    if (!user?.avatar_url || imageError) {
-      return (
-        <div className={`${size} rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center ${isRefreshing ? 'opacity-75' : ''}`}>
-          <UserIcon className="h-5 w-5 text-gray-500 dark:text-gray-300" />
-        </div>
-      );
-    }
-
-    return (
-      <div className={`${size} rounded-full overflow-hidden ${isRefreshing ? 'opacity-75' : ''}`}>
-        {imageLoading && (
-          <div className={`${size} rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center`}>
-            <UserIcon className="h-5 w-5 text-gray-500 dark:text-gray-300" />
-          </div>
-        )}
-        <img
-          src={user.avatar_url}
-          alt={user.username || user.email}
-          className={`${size} rounded-full object-cover ${imageLoading ? 'hidden' : 'block'}`}
-          onLoad={() => setImageLoading(false)}
-          onError={() => {
-            setImageError(true);
-            setImageLoading(false);
-          }}
-        />
-      </div>
-    );
-  });
-
-  UserAvatar.displayName = 'UserAvatar';
-
-  // Función para obtener el nombre a mostrar
-  const getDisplayName = useCallback((user) => {
-    if (!user) return '';
-    
-    // Priorizar username, fallback a email
-    return user.username || user.email?.split('@')[0] || 'Usuario';
-  }, []);
+  }, [mobileMenuOpen]); // Añade mobileMenuOpen como dependencia
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow-sm">
@@ -140,13 +90,18 @@ const Navbar = memo(() => {
                       onClick={() => setUserMenuOpen(!userMenuOpen)}
                       className="flex items-center space-x-2 focus:outline-none"
                     >
-                      <UserAvatar user={user} />
-                      <span className={`text-sm font-medium text-gray-700 dark:text-gray-300 ${isRefreshing ? 'opacity-75' : ''}`}>
-                        {getDisplayName(user)}
-                      </span>
-                      {isRefreshing && (
-                        <RefreshCw className="h-3 w-3 text-gray-400 animate-spin" />
+                      {user.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt={user.username}
+                          className="h-8 w-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                          <UserIcon className="h-5 w-5 text-gray-500 dark:text-gray-300" />
+                        </div>
                       )}
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{user.username}</span>
                     </button>
 
                     {userMenuOpen && (

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase, getCurrentUser } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
@@ -13,116 +13,25 @@ export const useAuth = () => {
   return context;
 };
 
-// Utilidades de cache
-const USER_CACHE_KEY = 'codehub_user_cache';
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
-
-const saveUserToCache = (user) => {
-  if (!user) {
-    localStorage.removeItem(USER_CACHE_KEY);
-    return;
-  }
-  
-  try {
-    const cacheData = {
-      user,
-      timestamp: Date.now()
-    };
-    localStorage.setItem(USER_CACHE_KEY, JSON.stringify(cacheData));
-  } catch (error) {
-    console.warn('Error saving user to cache:', error);
-  }
-};
-
-const getUserFromCache = () => {
-  try {
-    const cached = localStorage.getItem(USER_CACHE_KEY);
-    if (!cached) return null;
-    
-    const { user, timestamp } = JSON.parse(cached);
-    
-    // Verificar si el cache no ha expirado
-    if (Date.now() - timestamp < CACHE_DURATION) {
-      return user;
-    }
-    
-    // Cache expirado, limpiar
-    localStorage.removeItem(USER_CACHE_KEY);
-    return null;
-  } catch (error) {
-    console.warn('Error reading user from cache:', error);
-    localStorage.removeItem(USER_CACHE_KEY);
-    return null;
-  }
-};
-
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  // Referencias para evitar estados de carrera
-  const refreshInProgress = useRef(false);
-  const mountedRef = useRef(true);
 
-  const updateUser = (newUser, isFromCache = false) => {
-    if (!mountedRef.current) return;
-    
-    setUser(newUser);
-    
-    // Solo guardar en cache si no viene del cache
-    if (!isFromCache) {
-      saveUserToCache(newUser);
-    }
-  };
-
-  const refreshUser = async (silent = false) => {
-    // Evitar refreshes simultáneos
-    if (refreshInProgress.current) {
-      console.log('Refresh ya en progreso, saltando...');
-      return user;
-    }
-
+  const refreshUser = async () => {
     try {
-      refreshInProgress.current = true;
-      
-      if (silent) {
-        setIsRefreshing(true);
-      }
-      
       console.log('Refrescando usuario...');
       const currentUser = await getCurrentUser();
-      
-      if (mountedRef.current) {
-        updateUser(currentUser);
-        
-        if (silent) {
-          setIsRefreshing(false);
-        }
-      }
-      
+      setUser(currentUser);
       return currentUser;
     } catch (error) {
       console.error('Error refreshing user:', error);
-      
-      if (mountedRef.current) {
-        if (silent) {
-          setIsRefreshing(false);
-          // En refresh silencioso, mantener usuario actual si hay error
-          console.log('Error en refresh silencioso, manteniendo usuario actual');
-        } else {
-          updateUser(null);
-        }
-      }
-      
+      setUser(null);
       return null;
-    } finally {
-      refreshInProgress.current = false;
     }
   };
 
-  // Inicialización con cache
+  // Verificación inicial de sesión
   useEffect(() => {
     let isMounted = true;
     
@@ -130,19 +39,12 @@ export const AuthProvider = ({ children }) => {
       try {
         console.log('Iniciando autenticación...');
         
-        // 1. Intentar cargar desde cache primero
-        const cachedUser = getUserFromCache();
-        if (cachedUser && isMounted) {
-          console.log('Usuario cargado desde cache');
-          updateUser(cachedUser, true);
-          setLoading(false); // Mostrar datos del cache inmediatamente
-        }
-        
-        // 2. Obtener datos frescos en paralelo
         const currentUser = await getCurrentUser();
         
+        console.log('Estado de usuario:', currentUser ? 'Autenticado' : 'No autenticado');
+        
         if (isMounted) {
-          updateUser(currentUser);
+          setUser(currentUser);
           setLoading(false);
           setInitialized(true);
           console.log('Inicialización de AuthContext completada');
@@ -151,11 +53,7 @@ export const AuthProvider = ({ children }) => {
         console.error('Error initializing auth:', error);
         
         if (isMounted) {
-          // Si hay cache, mantenerlo; si no, limpiar
-          const cachedUser = getUserFromCache();
-          if (!cachedUser) {
-            updateUser(null);
-          }
+          setUser(null);
           setLoading(false);
           setInitialized(true);
           console.log('Inicialización de AuthContext completada con errores');
@@ -168,9 +66,10 @@ export const AuthProvider = ({ children }) => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, []); // Solo ejecutar una vez
 
-  // Listener de auth state changes
+  // REGLA #1: No invocar Auth dentro del callback
+  // Solo setear la sesión, nada más
   useEffect(() => {
     if (!initialized) return;
 
@@ -180,28 +79,38 @@ export const AuthProvider = ({ children }) => {
       const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth state change:', event);
         
+        // CRÍTICO: Solo setear estado, NO llamar a getCurrentUser() ni otras funciones Auth
         switch (event) {
           case 'SIGNED_IN':
             console.log('Usuario ha iniciado sesión');
-            // Refresh completo para obtener datos del perfil
-            await refreshUser(false);
+            // Solo setear la sesión básica, el refresh se hará desde fuera
+            if (session?.user) {
+              setUser({
+                ...session.user,
+                username: session.user.email?.split('@')[0] || 'usuario',
+                is_admin: session.user.email === 'manuel.jimena29@gmail.com'
+              });
+            }
             break;
-            
           case 'SIGNED_OUT':
             console.log('Usuario ha cerrado sesión');
-            updateUser(null);
+            setUser(null);
             break;
-            
           case 'TOKEN_REFRESHED':
             console.log('Token refrescado automáticamente');
-            // Refresh silencioso para mantener UX fluida
-            await refreshUser(true);
+            // No hacer nada, el SDK ya maneja el refresh
             break;
-            
           case 'USER_UPDATED':
             console.log('Usuario actualizado');
-            // Refresh silencioso
-            await refreshUser(true);
+            // Solo actualizar si tenemos la información básica
+            if (session?.user) {
+              setUser(prevUser => ({
+                ...session.user,
+                ...prevUser, // Mantener datos del perfil si los tenemos
+                username: prevUser?.username || session.user.email?.split('@')[0] || 'usuario',
+                is_admin: prevUser?.is_admin || session.user.email === 'manuel.jimena29@gmail.com'
+              }));
+            }
             break;
         }
       });
@@ -216,17 +125,10 @@ export const AuthProvider = ({ children }) => {
     };
   }, [initialized]);
 
-  // Cleanup al desmontar
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      updateUser(null);
+      setUser(null);
       window.localStorage.clear();
       toast.success('Sesión cerrada correctamente');
     } catch (error) {
@@ -238,15 +140,14 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
-    isRefreshing, // Nuevo estado para refreshes silenciosos
     signOut,
-    refreshUser: () => refreshUser(false), // Refresh manual (no silencioso)
+    refreshUser,
     isAuthenticated: !!user,
     isAdmin: user?.is_admin || false
   };
 
-  // Renderizar loading solo si realmente está cargando y no hay cache
-  if (!initialized && loading && !user) {
+  // Renderizar loading solo si realmente está cargando
+  if (!initialized) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
