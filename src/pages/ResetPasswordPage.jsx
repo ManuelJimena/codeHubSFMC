@@ -4,15 +4,6 @@ import { supabase } from '../lib/supabase';
 import { KeyRound, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-/**
- * Página de solicitud de restablecimiento de contraseña.
- * 1. El usuario introduce su email.
- * 2. Llamamos a `supabase.auth.resetPasswordForEmail()` con `redirectTo` apuntando
- *    a `/update-password`, que es la ruta de React donde procesaremos el token
- *    de recuperación y dejaremos al usuario cambiar su contraseña.
- * 3. Supabase envía el email con el enlace.
- * 4. Mostramos al usuario un mensaje para que revise su bandeja de entrada.
- */
 function ResetPasswordPage() {
   const [email, setEmail]     = useState('');
   const [loading, setLoading] = useState(false);
