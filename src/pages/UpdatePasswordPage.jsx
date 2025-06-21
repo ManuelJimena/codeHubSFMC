@@ -11,57 +11,68 @@ const UpdatePasswordPage = () => {
   const [sessionValid, setSessionValid] = useState(false);
   const navigate = useNavigate();
 
-  // Verificar sesión al cargar
+  /* ---------------------------------------------------------
+   * Paso 1 ▸ Intercambiar el código (PKCE) por sesión
+   * ------------------------------------------------------- */
   useEffect(() => {
-    const checkSessionAndUpdate = async () => {
+    (async () => {
+      const { error } = await supabase.auth.exchangeCodeForSession();
+      if (error && error.name !== 'AuthSessionMissingError') {
+        console.error('Error al intercambiar código:', error);
+        toast.error('Enlace inválido o caducado', { duration: 6000 });
+        navigate('/login', { replace: true });
+      }
+    })();
+  }, [navigate]);
+
+  /* ---------------------------------------------------------
+   * Paso 2 ▸ Verificar que la sesión sea válida
+   * ------------------------------------------------------- */
+  useEffect(() => {
+    const verifySession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          throw error;
-        }
-        
+        if (error) throw error;
         if (!session) {
-          toast.error('Por favor, utiliza un enlace de recuperación válido', { duration: 5000 });
+          toast.error('Enlace de recuperación inválido o caducado', { duration: 6000 });
           navigate('/login', { replace: true });
           return;
         }
-        
+
+        // Sesión correcta
         setSessionValid(true);
-        
-        // Asegurar que estamos en la página de updatePassword sin parámetros adicionales
+
+        // Limpiar la URL para que no quede el code o el hash
         if (window.location.search || window.location.hash) {
           window.history.replaceState(null, document.title, '/update-password');
         }
-        
-        // Mostrar mensaje de ayuda
-        toast.success('Por favor, establece tu nueva contraseña', { duration: 5000 });
-        
-        // Añadir un listener para alertar si el usuario intenta abandonar la página
-        const handleBeforeUnload = (e) => {
-          const message = "¿Estás seguro que deseas salir? No has actualizado tu contraseña.";
-          e.returnValue = message;
-          return message;
+
+        toast.success('Introduce tu nueva contraseña', { duration: 4500 });
+
+        // Avisar si el usuario intenta salir sin cambiarla
+        const beforeUnload = (e) => {
+          const msg = '¿Seguro que quieres salir? Aún no has actualizado tu contraseña.';
+          e.returnValue = msg;
+          return msg;
         };
-        
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        
-        return () => {
-          window.removeEventListener('beforeunload', handleBeforeUnload);
-        };
-      } catch (error) {
-        console.error('Error verificando sesión:', error);
-        toast.error('Ha ocurrido un error. Por favor, intenta de nuevo', { duration: 5000 });
+        window.addEventListener('beforeunload', beforeUnload);
+        return () => window.removeEventListener('beforeunload', beforeUnload);
+      } catch (err) {
+        console.error('Error verificando la sesión:', err);
+        toast.error('Error desconocido. Vuelve a intentarlo.', { duration: 5000 });
         navigate('/login', { replace: true });
       }
     };
-    
-    checkSessionAndUpdate();
+
+    verifySession();
   }, [navigate]);
 
+  /* ---------------------------------------------------------
+   * Paso 3 ▸ Actualizar la contraseña
+   * ------------------------------------------------------- */
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       toast.error('Las contraseñas no coinciden');
       return;
@@ -75,58 +86,38 @@ const UpdatePasswordPage = () => {
     setLoading(true);
 
     try {
-      // Verificar sesión activa
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        throw sessionError;
-      }
-      
-      if (!session) {
-        throw new Error('No hay una sesión activa para actualizar la contraseña');
-      }
-      
-      // Usar la API directa de updateUser para mayor control y evitar problemas con el SDK
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/auth/v1/user`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apiKey': import.meta.env.VITE_SUPABASE_ANON_KEY
-        },
-        body: JSON.stringify({
-          password: password
-        })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
-      }
-      
-      await response.json();
-      
-      // Notificar éxito y preparar redirección
-      toast.success('Contraseña actualizada correctamente', { duration: 5000 });
-      
-      // Cerrar sesión de manera segura
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+
+      toast.success('Contraseña actualizada correctamente', { duration: 4500 });
+
+      // Cerrar sesión para obligar a login con la nueva clave
       await supabase.auth.signOut();
       window.localStorage.clear();
-      
-      // Mostrar mensaje y redirigir
-      toast.success('Sesión cerrada. Redirigiendo al login...', { duration: 5000 });
-      
-      setTimeout(() => {
-        // Forzar recarga completa de la página
-        window.location.href = '/login';
-      }, 3000);
-    } catch (error) {
-      console.error('Error al actualizar contraseña:', error);
-      toast.error(`Error: ${error.message || 'Error al actualizar la contraseña'}`, { duration: 8000 });
+
+      toast.success('Sesión cerrada. Redirigiendo…', { duration: 4000 });
+      setTimeout(() => (window.location.href = '/login'), 2500);
+    } catch (err) {
+      console.error('Error al actualizar contraseña:', err);
+      toast.error(err.message || 'No se pudo actualizar la contraseña', { duration: 7000 });
     } finally {
       setLoading(false);
     }
   };
+
+  /* ---------------------------------------------------------
+   * Renderizado
+   * ------------------------------------------------------- */
+  if (!sessionValid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-700 dark:text-gray-300">Verificando enlace…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -190,7 +181,7 @@ const UpdatePasswordPage = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Actualizando...
+                    Actualizando…
                   </span>
                 ) : (
                   <span className="flex items-center">
