@@ -5,119 +5,89 @@ import { KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const UpdatePasswordPage = () => {
-  const [password, setPassword] = useState('');
+  const [password,        setPassword]        = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sessionValid, setSessionValid] = useState(false);
+  const [loading,         setLoading]         = useState(false);
+  const [sessionValid,    setSessionValid]    = useState(false);
   const navigate = useNavigate();
 
-  /* ---------------------------------------------------------
-   * Paso 1 ▸ Intercambiar el código (PKCE) por sesión
-   * ------------------------------------------------------- */
+  /*-----------------------------------------------------------
+    Intercambiar el código y validar sesión
+  -----------------------------------------------------------*/
   useEffect(() => {
     (async () => {
-      const { error } = await supabase.auth.exchangeCodeForSession();
-      if (error && error.name !== 'AuthSessionMissingError') {
-        console.error('Error al intercambiar código:', error);
-        toast.error('Enlace inválido o caducado', { duration: 6000 });
+      // 1️⃣ Canjear code/hash → sesión
+      const { error: swapErr } = await supabase.auth.exchangeCodeForSession();
+      if (swapErr && swapErr.name !== 'AuthSessionMissingError') {
+        console.error('Error intercambiando código:', swapErr);
+        toast.error('Enlace de recuperación inválido o caducado', { duration: 6000 });
         navigate('/login', { replace: true });
+        return;
       }
+
+      // 2️⃣ Confirmar que ahora existe sesión
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        toast.error('Enlace de recuperación inválido o caducado', { duration: 6000 });
+        navigate('/login', { replace: true });
+        return;
+      }
+
+      setSessionValid(true);
+
+      // Limpia los parámetros para evitar compartir tokens en la URL
+      window.history.replaceState(null, document.title, '/update-password');
+
+      toast.success('Establece tu nueva contraseña', { duration: 4500 });
+
+      // Aviso si cierra la pestaña sin cambiar
+      const handleBeforeUnload = (e) => {
+        const msg = '¿Seguro que quieres salir? No has actualizado tu contraseña.';
+        e.returnValue = msg;
+        return msg;
+      };
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     })();
   }, [navigate]);
 
-  /* ---------------------------------------------------------
-   * Paso 2 ▸ Verificar que la sesión sea válida
-   * ------------------------------------------------------- */
-  useEffect(() => {
-    const verifySession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        if (!session) {
-          toast.error('Enlace de recuperación inválido o caducado', { duration: 6000 });
-          navigate('/login', { replace: true });
-          return;
-        }
-
-        // Sesión correcta
-        setSessionValid(true);
-
-        // Limpiar la URL para que no quede el code o el hash
-        if (window.location.search || window.location.hash) {
-          window.history.replaceState(null, document.title, '/update-password');
-        }
-
-        toast.success('Introduce tu nueva contraseña', { duration: 4500 });
-
-        // Avisar si el usuario intenta salir sin cambiarla
-        const beforeUnload = (e) => {
-          const msg = '¿Seguro que quieres salir? Aún no has actualizado tu contraseña.';
-          e.returnValue = msg;
-          return msg;
-        };
-        window.addEventListener('beforeunload', beforeUnload);
-        return () => window.removeEventListener('beforeunload', beforeUnload);
-      } catch (err) {
-        console.error('Error verificando la sesión:', err);
-        toast.error('Error desconocido. Vuelve a intentarlo.', { duration: 5000 });
-        navigate('/login', { replace: true });
-      }
-    };
-
-    verifySession();
-  }, [navigate]);
-
-  /* ---------------------------------------------------------
-   * Paso 3 ▸ Actualizar la contraseña
-   * ------------------------------------------------------- */
+  /*-----------------------------------------------------------
+    Enviar nueva contraseña
+  -----------------------------------------------------------*/
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      toast.error('Las contraseñas no coinciden');
-      return;
+      toast.error('Las contraseñas no coinciden'); return;
     }
-
     if (password.length < 6) {
-      toast.error('La contraseña debe tener al menos 6 caracteres');
-      return;
+      toast.error('Debe tener al menos 6 caracteres'); return;
     }
-
     setLoading(true);
 
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
 
-      toast.success('Contraseña actualizada correctamente', { duration: 4500 });
+      toast.success('Contraseña actualizada correctamente', { duration: 5000 });
 
-      // Cerrar sesión para obligar a login con la nueva clave
+      // Cerrar sesión y redirigir
       await supabase.auth.signOut();
       window.localStorage.clear();
-
-      toast.success('Sesión cerrada. Redirigiendo…', { duration: 4000 });
+      toast.success('Sesión cerrada. Redirigiendo…', { duration: 4500 });
       setTimeout(() => (window.location.href = '/login'), 2500);
     } catch (err) {
       console.error('Error al actualizar contraseña:', err);
-      toast.error(err.message || 'No se pudo actualizar la contraseña', { duration: 7000 });
+      toast.error(err.message || 'No se pudo actualizar', { duration: 7000 });
     } finally {
       setLoading(false);
     }
   };
 
-  /* ---------------------------------------------------------
-   * Renderizado
-   * ------------------------------------------------------- */
-  if (!sessionValid) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-700 dark:text-gray-300">Verificando enlace…</p>
-        </div>
-      </div>
-    );
-  }
+  /*-----------------------------------------------------------
+    Render
+  -----------------------------------------------------------*/
+  if (!sessionValid) return null; // Evita parpadeo antes de validar
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -181,7 +151,7 @@ const UpdatePasswordPage = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Actualizando…
+                    Actualizando...
                   </span>
                 ) : (
                   <span className="flex items-center">
