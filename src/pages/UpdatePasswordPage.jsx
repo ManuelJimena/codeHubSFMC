@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { KeyRound } from 'lucide-react';
@@ -12,24 +12,14 @@ const UpdatePasswordPage = () => {
   const navigate = useNavigate();
 
   /* ---------------------------------------------------------
-     1. Intercambiar el ?code=… por una sesión (PKCE)
+     1. Verificar que existe sesión (flujo implícito)
   --------------------------------------------------------- */
   useEffect(() => {
     (async () => {
-      // Intenta canjear el código. Si no hay ?code= devolverá "AuthSessionMissingError"
-      const { data: swapData, error: swapErr } = await supabase.auth.exchangeCodeForSession();
-      if (swapErr && swapErr.name !== 'AuthSessionMissingError') {
-        console.error('Error al canjear el código:', swapErr);
-        toast.error('Enlace de recuperación inválido o caducado', { duration: 6000 });
-        navigate('/login', { replace: true });
-        return;
-      }
+      // Comprobamos la sesión almacenada por Supabase (detectSessionInUrl: true)
+      const { data: { session }, error } = await supabase.auth.getSession();
 
-      // Si exchange devolvió sesión la usamos; si no, probamos getSession()
-      const maybeSession =
-        swapData?.session ?? (await supabase.auth.getSession()).data.session;
-
-      if (!maybeSession) {
+      if (error || !session) {
         toast.error('Enlace de recuperación inválido o caducado', { duration: 6000 });
         navigate('/login', { replace: true });
         return;
@@ -38,7 +28,7 @@ const UpdatePasswordPage = () => {
       // Éxito → habilitamos el formulario
       setSessionOK(true);
 
-      // Limpia querystring para no dejar tokens en la barra de direcciones
+      // Limpiar hash/querystring para no dejar tokens en la barra de direcciones
       window.history.replaceState(null, document.title, '/update-password');
 
       toast.success('Establece tu nueva contraseña', { duration: 4500 });
