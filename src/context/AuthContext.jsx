@@ -34,15 +34,15 @@ export const AuthProvider = ({ children }) => {
   // Verificación inicial de sesión
   useEffect(() => {
     let isMounted = true;
-    
+
     const initAuth = async () => {
       try {
         console.log('Iniciando autenticación...');
-        
+
         const currentUser = await getCurrentUser();
-        
+
         console.log('Estado de usuario:', currentUser ? 'Autenticado' : 'No autenticado');
-        
+
         if (isMounted) {
           setUser(currentUser);
           setLoading(false);
@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        
+
         if (isMounted) {
           setUser(null);
           setLoading(false);
@@ -68,62 +68,62 @@ export const AuthProvider = ({ children }) => {
     };
   }, []); // Solo ejecutar una vez
 
-  // REGLA #1: No invocar Auth dentro del callback
-  // Solo setear la sesión, nada más
+  // Listener global de cambios de Auth
   useEffect(() => {
     if (!initialized) return;
 
-    let subscription;
-    
-    try {
-      const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('Auth state change:', event);
-        
-        // CRÍTICO: Solo setear estado, NO llamar a getCurrentUser() ni otras funciones Auth
-        switch (event) {
-          case 'SIGNED_IN':
-            console.log('Usuario ha iniciado sesión');
-            // Solo setear la sesión básica, el refresh se hará desde fuera
-            if (session?.user) {
-              setUser({
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event);
+
+      switch (event) {
+        case 'SIGNED_IN': {
+          console.log('Usuario ha iniciado sesión');
+          if (session?.user) {
+            // Si ya tenemos usuario, no lo pisamos; si no, establecemos datos mínimos
+            setUser(prevUser => {
+              if (prevUser) return prevUser;
+              return {
                 ...session.user,
                 username: session.user.email?.split('@')[0] || 'usuario',
                 is_admin: session.user.email === 'manuel.jimena29@gmail.com'
-              });
-            }
-            break;
-          case 'SIGNED_OUT':
-            console.log('Usuario ha cerrado sesión');
-            setUser(null);
-            break;
-          case 'TOKEN_REFRESHED':
-            console.log('Token refrescado automáticamente');
-            // No hacer nada, el SDK ya maneja el refresh
-            break;
-          case 'USER_UPDATED':
-            console.log('Usuario actualizado');
-            // Solo actualizar si tenemos la información básica
-            if (session?.user) {
-              setUser(prevUser => ({
-                ...session.user,
-                ...prevUser, // Mantener datos del perfil si los tenemos
-                username: prevUser?.username || session.user.email?.split('@')[0] || 'usuario',
-                is_admin: prevUser?.is_admin || session.user.email === 'manuel.jimena29@gmail.com'
-              }));
-            }
-            break;
+              };
+            });
+            // Refrescar perfil completo fuera del lock interno de Supabase
+            setTimeout(() => {
+              refreshUser().catch(console.error);
+            }, 0);
+          }
+          break;
         }
-      });
-      
-      subscription = data.subscription;
-    } catch (error) {
-      console.error('Error setting up auth listener:', error);
-    }
+        case 'SIGNED_OUT':
+          console.log('Usuario ha cerrado sesión');
+          setUser(null);
+          break;
+        case 'TOKEN_REFRESHED':
+          console.log('Token refrescado automáticamente');
+          // Vuelve a recuperar el perfil una vez liberado el lock
+          setTimeout(() => {
+            refreshUser().catch(console.error);
+          }, 0);
+          break;
+        case 'USER_UPDATED':
+          console.log('Usuario actualizado');
+          if (session?.user) {
+            setUser(prevUser => ({
+              ...prevUser, // conserva avatar y username existentes
+              ...session.user,
+              username: prevUser?.username || session.user.email?.split('@')[0] || 'usuario',
+              is_admin: prevUser?.is_admin || session.user.email === 'manuel.jimena29@gmail.com'
+            }));
+          }
+          break;
+      }
+    });
 
     return () => {
-      subscription?.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, [initialized]);
+  }, [initialized]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const signOut = async () => {
     try {
@@ -143,10 +143,9 @@ export const AuthProvider = ({ children }) => {
     signOut,
     refreshUser,
     isAuthenticated: !!user,
-    isAdmin: user?.is_admin || false
+    isAdmin: !!user?.is_admin
   };
 
-  // Renderizar loading solo si realmente está cargando
   if (!initialized) {
     return (
       <div className="flex items-center justify-center h-screen">
