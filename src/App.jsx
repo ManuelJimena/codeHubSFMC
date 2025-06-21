@@ -1,8 +1,7 @@
-import React, { Suspense, lazy } from 'react';
+import { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import AuthRedirectMiddleware from './components/AuthRedirectMiddleware';
 import ErrorBoundary from './components/ErrorBoundary';
-import DebugInfo from './components/DebugInfo';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
