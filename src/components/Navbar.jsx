@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Code, User as UserIcon, LogOut, Heart, Plus, Menu, X, Shield, Moon, Sun, Bot, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
