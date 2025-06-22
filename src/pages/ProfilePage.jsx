@@ -8,24 +8,24 @@ import toast from 'react-hot-toast';
 const ProfilePage = () => {
   const { user, refreshUser } = useAuth();
 
-  /* -------------------- estado “info de perfil” -------------------- */
+  /* ---------------- estado “info de perfil” ---------------- */
   const [username, setUsername] = useState('');
   const [avatarUrl, setAvatarUrl] = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  /* -------------------- estado “cambiar contraseña” -------------------- */
-  const [showPassForm,     setShowPassForm]     = useState(false);
-  const [currentPass,      setCurrentPass]      = useState('');
-  const [newPass,          setNewPass]          = useState('');
-  const [confirmNewPass,   setConfirmNewPass]   = useState('');
-  const [changingPass,     setChangingPass]     = useState(false);
+  /* --------------- estado “cambiar contraseña” -------------- */
+  const [showPassForm,   setShowPassForm]   = useState(false);
+  const [currentPass,    setCurrentPass]    = useState('');
+  const [newPass,        setNewPass]        = useState('');
+  const [confirmNewPass, setConfirmNewPass] = useState('');
+  const [changingPass,   setChangingPass]   = useState(false);
 
   const navigate = useNavigate();
 
-  /* ----------------------------------------------------------------
-     Cargar datos del usuario
-  ---------------------------------------------------------------- */
+  /* ----------------------------------------------------------
+     Cargar datos de usuario o redirigir si está sin loguear
+  ---------------------------------------------------------- */
   useEffect(() => {
     if (user) {
       setUsername(user.username);
@@ -35,12 +35,10 @@ const ProfilePage = () => {
     }
   }, [user, navigate]);
 
-  /* ----------------------------------------------------------------
-     Avatar
-  ---------------------------------------------------------------- */
+  /* ------------------- Manejar avatar ---------------------- */
   const handleAvatarChange = (e) => {
     try {
-      if (!e.target.files || !e.target.files[0]) return;
+      if (!e.target.files?.[0]) return;
 
       const file = e.target.files[0];
       if (file.size > 2 * 1024 * 1024) {
@@ -55,44 +53,43 @@ const ProfilePage = () => {
     }
   };
 
-  /* ----------------------------------------------------------------
-     Guardar perfil
-  ---------------------------------------------------------------- */
+  /* ------------------- Guardar perfil ---------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
 
     const trimmedUsername = username.trim();
 
-    // Validaciones
-    if (!trimmedUsername) {
-      toast.error('El nombre de usuario es obligatorio'); return;
-    }
-    if (trimmedUsername.length < 3) {
-      toast.error('Debe tener al menos 3 caracteres'); return;
-    }
+    // Validaciones básicas
+    if (!trimmedUsername)         { toast.error('El nombre de usuario es obligatorio');          return; }
+    if (trimmedUsername.length<3) { toast.error('Debe tener al menos 3 caracteres');             return; }
 
     setSaving(true);
     try {
       // ¿Nombre de usuario repetido?
       if (trimmedUsername !== user.username) {
-        const { data: existingUser, error: checkError } = await supabase
+        const { data: existing, error: checkErr } = await supabase
           .from('profiles')
           .select('username')
           .eq('username', trimmedUsername)
           .neq('id', user.id)
           .maybeSingle();
-        if (checkError) throw checkError;
-        if (existingUser) throw new Error('Este nombre de usuario ya está en uso');
+        if (checkErr) throw checkErr;
+        if (existing) {
+          toast.error('Este nombre de usuario ya está en uso');
+          setSaving(false);
+          return;
+        }
       }
 
-      // Avatar
+      // Manejo de avatar
       let newAvatarUrl = avatarUrl;
       if (avatarFile) {
         if (user.avatar_url) await deleteAvatar(user.avatar_url);
         newAvatarUrl = await uploadAvatar(avatarFile, user.id);
       }
 
+      // Actualizar perfil
       const { error } = await supabase
         .from('profiles')
         .update({ username: trimmedUsername, avatar_url: newAvatarUrl })
@@ -109,35 +106,41 @@ const ProfilePage = () => {
     }
   };
 
-  /* ----------------------------------------------------------------
-     Cambiar contraseña
-  ---------------------------------------------------------------- */
+  /* --------------- Cambiar contraseña ---------------------- */
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
     if (newPass.length < 6) {
-      toast.error('La nueva contraseña debe tener al menos 6 caracteres'); return;
+      toast.error('La nueva contraseña debe tener al menos 6 caracteres');
+      return;
     }
     if (newPass !== confirmNewPass) {
-      toast.error('Las contraseñas no coinciden'); return;
+      toast.error('Las contraseñas no coinciden');
+      return;
     }
 
     setChangingPass(true);
     try {
-      // Paso 1: re-autenticación
+      // Paso 1 : re-autenticación
       const { error: signErr } = await supabase.auth.signInWithPassword({
         email: user.email,
         password: currentPass
       });
-      if (signErr) throw new Error('La contraseña actual es incorrecta');
+      if (signErr) {
+        toast.error('La contraseña actual es incorrecta');
+        setChangingPass(false);
+        return;
+      }
 
-      // Paso 2: actualizar
+      // Paso 2 : actualizar contraseña
       const { error: updErr } = await supabase.auth.updateUser({ password: newPass });
       if (updErr) throw updErr;
 
       toast.success('Contraseña cambiada correctamente');
-      // Limpieza
-      setCurrentPass(''); setNewPass(''); setConfirmNewPass(''); setShowPassForm(false);
+      setCurrentPass('');
+      setNewPass('');
+      setConfirmNewPass('');
+      setShowPassForm(false);
     } catch (err) {
       console.error(err);
       toast.error(err.message || 'No se pudo cambiar la contraseña');
@@ -146,13 +149,12 @@ const ProfilePage = () => {
     }
   };
 
-  /* ----------------------------------------------------------------
-     Render
-  ---------------------------------------------------------------- */
+  /* ------------------------ UI ----------------------------- */
   if (!user) return null;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Cabecera */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tu perfil</h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -160,10 +162,11 @@ const ProfilePage = () => {
         </p>
       </div>
 
+      {/* Tarjeta principal */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
         <form onSubmit={handleSubmit} className="p-6">
           <div className="flex flex-col md:flex-row">
-            {/* -------------------- Columna avatar -------------------- */}
+            {/* -------- Columna avatar -------- */}
             <div className="md:w-1/3 mb-6 md:mb-0">
               <div className="flex flex-col items-center">
                 <div className="relative mb-4">
@@ -194,9 +197,9 @@ const ProfilePage = () => {
               </div>
             </div>
 
-            {/* -------------------- Columna datos -------------------- */}
+            {/* -------- Columna datos -------- */}
             <div className="md:w-2/3 md:pl-8">
-              {/* Email */}
+              {/* Email (solo lectura) */}
               <div className="mb-6">
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Correo electrónico
@@ -213,7 +216,7 @@ const ProfilePage = () => {
                 </p>
               </div>
 
-              {/* Username */}
+              {/* Nombre de usuario */}
               <div className="mb-6">
                 <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Nombre de usuario
@@ -228,7 +231,7 @@ const ProfilePage = () => {
                 />
               </div>
 
-              {/* Botón guardar perfil */}
+              {/* Botones acción */}
               <div className="flex justify-between flex-wrap gap-4">
                 <button
                   type="submit"
@@ -250,8 +253,6 @@ const ProfilePage = () => {
                     </span>
                   )}
                 </button>
-
-                {/* Toggle formulario contraseña */}
                 <button
                   type="button"
                   onClick={() => setShowPassForm(!showPassForm)}
@@ -262,7 +263,7 @@ const ProfilePage = () => {
                 </button>
               </div>
 
-              {/* -------------------- Form cambiar contraseña -------------------- */}
+              {/* Formulario cambiar contraseña */}
               {showPassForm && (
                 <form onSubmit={handleChangePassword} className="mt-8 space-y-6">
                   <div>
