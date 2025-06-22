@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, uploadAvatar, deleteAvatar } from './lib/supabase';
+import { supabase, uploadAvatar, deleteAvatar } from '/lib/supabase';
 import { Upload, Save, User as UserIcon, KeyRound, ShieldCheck} from 'lucide-react';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from '/context/AuthContext';
 import toast from 'react-hot-toast';
 
 const ProfilePage = () => {
