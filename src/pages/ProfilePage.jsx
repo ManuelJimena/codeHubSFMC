@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, uploadAvatar, deleteAvatar } from '../lib/supabase';
-import { Upload, Save, User as UserIcon, KeyRound, ShieldCheck } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { supabase, uploadAvatar, deleteAvatar } from './lib/supabase';
+import { Upload, Save, User as UserIcon, KeyRound, ShieldCheck} from 'lucide-react';
+import { useAuth } from './context/AuthContext';
 import toast from 'react-hot-toast';
 
 const ProfilePage = () => {
   const { user, refreshUser } = useAuth();
 
   /* ---------- estado “info de perfil” ---------- */
-  const [username, setUsername] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [username,   setUsername]   = useState('');
+  const [avatarUrl,  setAvatarUrl]  = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [saving,     setSaving]     = useState(false);
 
   /* ---------- estado “cambiar contraseña” ------ */
   const [showPassForm,   setShowPassForm]   = useState(false);
@@ -31,18 +31,25 @@ const ProfilePage = () => {
     } else {
       navigate('/login');
     }
-  }, [user, navigate]);
+  }, [user, navigate]);   // ← el navigate evita warning de React
 
-  /* ---------------- avatar --------------------- */
+  /* ---------------- cambiar avatar ------------- */
   const handleAvatarChange = (e) => {
-    if (!e.target.files?.[0]) return;
-    const file = e.target.files[0];
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('La imagen no puede ser mayor a 2 MB');
-      return;
+    try {
+      if (!e.target.files?.[0]) return;
+      const file = e.target.files[0];
+
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('La imagen no puede ser mayor a 2 MB');
+        return;
+      }
+
+      setAvatarFile(file);
+      setAvatarUrl(URL.createObjectURL(file));
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al procesar la imagen');
     }
-    setAvatarFile(file);
-    setAvatarUrl(URL.createObjectURL(file));
   };
 
   /* -------------- guardar perfil --------------- */
@@ -64,7 +71,7 @@ const ProfilePage = () => {
           .neq('id', user.id)
           .maybeSingle();
         if (error) throw error;
-        if (dup) { toast.error('Ese nombre de usuario ya existe'); setSaving(false); return; }
+        if (dup)   { toast.error('Ese nombre de usuario ya existe'); setSaving(false); return; }
       }
 
       let newAvatarUrl = avatarUrl;
@@ -92,10 +99,10 @@ const ProfilePage = () => {
   /* ----------- cambiar contraseña -------------- */
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    e.stopPropagation();          // ← evita que algún form padre se dispare
+    e.stopPropagation();  // por si el botón quedara dentro de otro <form>
 
-    if (newPass.length < 6)              { toast.error('La nueva contraseña debe tener al menos 6 caracteres'); return; }
-    if (newPass !== confirmNewPass)      { toast.error('Las contraseñas no coinciden');                          return; }
+    if (newPass.length < 6)         { toast.error('La nueva contraseña debe tener al menos 6 caracteres'); return; }
+    if (newPass !== confirmNewPass) { toast.error('Las contraseñas no coinciden');                         return; }
 
     setChangingPass(true);
     try {
@@ -112,8 +119,11 @@ const ProfilePage = () => {
       const { error: updErr } = await supabase.auth.updateUser({ password: newPass });
       if (updErr) throw updErr;
 
-      toast.success('Contraseña cambiada');
-      setCurrentPass(''); setNewPass(''); setConfirmNewPass(''); setShowPassForm(false);
+      toast.success('Contraseña cambiada correctamente');
+      setCurrentPass('');
+      setNewPass('');
+      setConfirmNewPass('');
+      setShowPassForm(false);
     } catch (err) {
       console.error(err);
       toast.error(err.message || 'No se pudo cambiar la contraseña');
@@ -122,17 +132,40 @@ const ProfilePage = () => {
     }
   };
 
-  /* ------------------- UI ---------------------- */
-  if (!user) return null;
+  /* ---------- vista sin sesión ----------------- */
+  if (!user) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          No has iniciado sesión
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          Debes iniciar sesión para ver tu perfil.
+        </p>
+        <button
+          onClick={() => navigate('/login')}
+          className="inline-flex items-center px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+        >
+          Iniciar sesión
+        </button>
+      </div>
+    );
+  }
 
+  /* ------------------- UI ---------------------- */
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold mb-8 text-gray-900 dark:text-white">Tu perfil</h1>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tu perfil</h1>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          Actualiza tu información personal
+        </p>
+      </div>
 
-      {/* -------- formulario PERFIL -------- */}
+      {/* ---------- tarjeta PERFIL ---------- */}
       <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
         <div className="flex flex-col md:flex-row">
-          {/* Avatar */}
+          {/* Avatar ------------------------------------------------ */}
           <div className="md:w-1/3 mb-6 md:mb-0 flex flex-col items-center">
             <div className="relative mb-4">
               {avatarUrl ? (
@@ -147,29 +180,45 @@ const ProfilePage = () => {
                 className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full cursor-pointer hover:bg-blue-600"
               >
                 <Upload className="h-4 w-4" />
-                <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="hidden"
+                />
               </label>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Haz clic para cambiar tu avatar</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Haz clic en el icono para cambiar tu avatar
+            </p>
           </div>
 
-          {/* Datos */}
+          {/* Datos ------------------------------------------------- */}
           <div className="md:w-2/3 md:pl-8">
-            {/* Email (readonly) */}
+            {/* Email (solo lectura) */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Correo electrónico</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Correo electrónico
+              </label>
               <input
                 type="email"
                 value={user.email}
                 disabled
                 className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 sm:text-sm"
               />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                No puedes cambiar tu correo electrónico
+              </p>
             </div>
 
-            {/* Username */}
+            {/* Nombre de usuario */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre de usuario</label>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Nombre de usuario
+              </label>
               <input
+                id="username"
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -178,8 +227,8 @@ const ProfilePage = () => {
               />
             </div>
 
-            {/* Botones */}
-            <div className="flex flex-wrap gap-4">
+            {/* Botones acción */}
+            <div className="flex justify-between flex-wrap gap-4">
               <button
                 type="submit"
                 disabled={saving}
@@ -209,11 +258,16 @@ const ProfilePage = () => {
         </div>
       </form>
 
-      {/* -------- formulario CONTRASEÑA -------- */}
+      {/* ---------- tarjeta CONTRASEÑA ---------- */}
       {showPassForm && (
-        <form onSubmit={handleChangePassword} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mt-8 space-y-6">
+        <form
+          onSubmit={handleChangePassword}
+          className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mt-8 space-y-6"
+        >
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contraseña actual</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Contraseña actual
+            </label>
             <input
               type="password"
               value={currentPass}
@@ -224,7 +278,9 @@ const ProfilePage = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nueva contraseña</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Nueva contraseña
+            </label>
             <input
               type="password"
               value={newPass}
@@ -235,7 +291,9 @@ const ProfilePage = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirmar nueva contraseña</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Confirmar nueva contraseña
+            </label>
             <input
               type="password"
               value={confirmNewPass}
