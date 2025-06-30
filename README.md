@@ -5,9 +5,10 @@
 ### *La plataforma definitiva para fragmentos de código de Salesforce Marketing Cloud*
 
 [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://code-hub-sfmc.vercel.app)
-[![React](https://img.shields.io/badge/React-18.3.1-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.io/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![React](https://img.shields.io/badge/React-19.1.0-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-2.50.0-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.io/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4.17-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+[![Vite](https://img.shields.io/badge/Vite-6.3.5-646CFF?style=for-the-badge&logo=vite)](https://vitejs.dev/)
 
 [🌐 **Demo en Vivo**](https://code-hub-sfmc.vercel.app) • [📖 **Documentación**](#-características) • [🚀 **Empezar**](#-instalación)
 
@@ -58,12 +59,52 @@
 
 <div align="center">
 
-| Frontend | Backend | Servicios | Herramientas |
-|----------|---------|-----------|--------------|
-| ![React](https://img.shields.io/badge/React-61DAFB?style=flat&logo=react&logoColor=black) | ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=flat&logo=supabase&logoColor=white) | ![OpenRouter](https://img.shields.io/badge/OpenRouter-AI-FF6B6B?style=flat) | ![Vite](https://img.shields.io/badge/Vite-646CFF?style=flat&logo=vite&logoColor=white) |
-| ![Tailwind](https://img.shields.io/badge/Tailwind-38B2AC?style=flat&logo=tailwind-css&logoColor=white) | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=flat&logo=postgresql&logoColor=white) | ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white) | ![ESLint](https://img.shields.io/badge/ESLint-4B32C3?style=flat&logo=eslint&logoColor=white) |
+| **Frontend** | **Backend** | **Servicios** | **Herramientas** |
+|--------------|-------------|---------------|------------------|
+| ![React](https://img.shields.io/badge/React-19.1.0-61DAFB?style=flat&logo=react&logoColor=black) | ![Supabase](https://img.shields.io/badge/Supabase-2.50.0-3ECF8E?style=flat&logo=supabase&logoColor=white) | ![OpenRouter](https://img.shields.io/badge/OpenRouter-AI-FF6B6B?style=flat) | ![Vite](https://img.shields.io/badge/Vite-6.3.5-646CFF?style=flat&logo=vite&logoColor=white) |
+| ![Tailwind](https://img.shields.io/badge/Tailwind-3.4.17-38B2AC?style=flat&logo=tailwind-css&logoColor=white) | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-336791?style=flat&logo=postgresql&logoColor=white) | ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white) | ![ESLint](https://img.shields.io/badge/ESLint-9.29.0-4B32C3?style=flat&logo=eslint&logoColor=white) |
+| ![React Router](https://img.shields.io/badge/React_Router-7.6.2-CA4245?style=flat&logo=react-router&logoColor=white) | ![Row Level Security](https://img.shields.io/badge/RLS-Enabled-green?style=flat) | ![OpenAI](https://img.shields.io/badge/OpenAI-5.6.0-412991?style=flat&logo=openai&logoColor=white) | ![PostCSS](https://img.shields.io/badge/PostCSS-8.5.6-DD3A0A?style=flat&logo=postcss&logoColor=white) |
 
 </div>
+
+## 📦 Dependencias Principales
+
+### **Core Dependencies**
+```json
+{
+  "react": "^19.1.0",
+  "react-dom": "^19.1.0",
+  "react-router-dom": "^7.6.2",
+  "@supabase/supabase-js": "^2.50.0"
+}
+```
+
+### **UI & Styling**
+```json
+{
+  "tailwindcss": "^3.4.17",
+  "lucide-react": "^0.522.0",
+  "react-hot-toast": "^2.5.2",
+  "react-syntax-highlighter": "^15.6.1"
+}
+```
+
+### **AI Integration**
+```json
+{
+  "openai": "^5.6.0"
+}
+```
+
+### **Development Tools**
+```json
+{
+  "vite": "^6.3.5",
+  "eslint": "^9.29.0",
+  "typescript": "^5.8.3",
+  "autoprefixer": "^10.4.21"
+}
+```
 
 ## 🚀 Instalación
 
@@ -193,6 +234,23 @@ vercel
 - **Railway**: Deploy directo desde GitHub
 - **Render**: Build automático con cada push
 
+## 🔄 Actualizaciones Recientes
+
+### **v1.2.0** - Enero 2025
+- ⬆️ **React 19.1.0**: Última versión estable
+- ⬆️ **Supabase 2.50.0**: Mejoras en autenticación
+- ⬆️ **Vite 6.3.5**: Mejor rendimiento de build
+- ⬆️ **Tailwind 3.4.17**: Nuevas utilidades
+- ⬆️ **ESLint 9.29.0**: Reglas actualizadas
+- 🔧 **OpenAI 5.6.0**: API mejorada para IA
+- 🎨 **React Router 7.6.2**: Navegación optimizada
+
+### **Mejoras de Rendimiento**
+- 🚀 **Lazy Loading**: Carga diferida de componentes
+- 📦 **Code Splitting**: División automática de código
+- 🎯 **Tree Shaking**: Eliminación de código no utilizado
+- 💾 **Caching**: Estrategias de caché mejoradas
+
 ## 🤝 Contribuir
 
 ¡Las contribuciones son bienvenidas! Por favor:
@@ -209,6 +267,16 @@ vercel
 - Añade tests para nuevas características
 - Actualiza la documentación cuando sea necesario
 - Usa commits descriptivos
+
+## 📊 Estadísticas del Proyecto
+
+<div align="center">
+
+![GitHub repo size](https://img.shields.io/github/repo-size/ManuelJimena/codehubsfmc?style=for-the-badge)
+![GitHub language count](https://img.shields.io/github/languages/count/ManuelJimena/codehubsfmc?style=for-the-badge)
+![GitHub top language](https://img.shields.io/github/languages/top/ManuelJimena/codehubsfmc?style=for-the-badge)
+
+</div>
 
 ## 📄 Licencia
 
@@ -233,6 +301,20 @@ Este proyecto está licenciado bajo la **Licencia MIT** - ver el archivo [LICENS
 - [**Tailwind CSS**](https://tailwindcss.com/) - Por el framework de estilos
 - **La comunidad open source** - Por hacer esto posible
 
+## 🔮 Roadmap
+
+### **Q1 2025**
+- [ ] 📱 **App móvil** con React Native
+- [ ] 🔍 **Búsqueda semántica** con embeddings
+- [ ] 👥 **Colaboración en tiempo real**
+- [ ] 📊 **Analytics avanzados**
+
+### **Q2 2025**
+- [ ] 🌐 **Internacionalización** (i18n)
+- [ ] 🎨 **Editor de código** integrado
+- [ ] 🔗 **Integración con GitHub**
+- [ ] 📚 **Sistema de documentación**
+
 ---
 
 <div align="center">
@@ -240,5 +322,7 @@ Este proyecto está licenciado bajo la **Licencia MIT** - ver el archivo [LICENS
 **⭐ Si te gusta este proyecto, ¡dale una estrella en GitHub! ⭐**
 
 [🌐 **Visitar codeHubSFMC**](https://code-hub-sfmc.vercel.app)
+
+*Hecho con ❤️ para la comunidad de Salesforce Marketing Cloud*
 
 </div>
