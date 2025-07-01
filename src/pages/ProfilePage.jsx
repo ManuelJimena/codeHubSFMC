@@ -8,13 +8,13 @@ import toast from 'react-hot-toast';
 const ProfilePage = () => {
   const { user, refreshUser } = useAuth();
 
-  /* ---------- estado “info de perfil” ---------- */
+  /* ---------- estado "info de perfil" ---------- */
   const [username,   setUsername]   = useState('');
   const [avatarUrl,  setAvatarUrl]  = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [saving,     setSaving]     = useState(false);
 
-  /* ---------- estado “cambiar contraseña” ------ */
+  /* ---------- estado "cambiar contraseña" ------ */
   const [showPassForm,   setShowPassForm]   = useState(false);
   const [currentPass,    setCurrentPass]    = useState('');
   const [newPass,        setNewPass]        = useState('');

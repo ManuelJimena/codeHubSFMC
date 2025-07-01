@@ -89,7 +89,7 @@ export const deleteAvatar = async (url) => {
 
     if (error) throw error;
   } catch (error) {
-    console.error('Error deleting avatar:', error);
+    console.error('Error al eliminar avatar:', error);
     throw error;
   }
 };
@@ -195,7 +195,7 @@ export const signOut = async () => {
     // Force page reload to clear any cached data
     window.location.href = '/';
   } catch (error) {
-    console.error('Error during sign out:', error);
+    console.error('Error al cerrar sesión:', error);
     throw error;
   }
 };

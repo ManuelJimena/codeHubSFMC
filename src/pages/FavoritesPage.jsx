@@ -37,7 +37,7 @@ const FavoritesPage = () => {
         .eq('user_id', user.id);
       
       if (error) {
-        console.error('Error fetching favorites:', error);
+        console.error('Error al obtener favoritos:', error);
         throw new Error('Error al cargar los favoritos');
       } else {
         const favoriteSnippets = data
@@ -51,7 +51,7 @@ const FavoritesPage = () => {
         setSnippets(favoriteSnippets);
       }
     } catch (error) {
-      console.error('Error fetching favorites:', error);
+      console.error('Error al obtener favoritos:', error);
       setError(error.message);
       toast.error(error.message || 'Error al cargar los favoritos');
     } finally {
@@ -84,7 +84,7 @@ const FavoritesPage = () => {
       setSnippets(snippets.filter(snippet => snippet.id !== snippetId));
       toast.success('Eliminado de favoritos');
     } catch (error) {
-      console.error('Error updating vote count:', error);
+      console.error('Error al actualizar contador de votos:', error);
       toast.error('Error al eliminar de favoritos');
       toast.error('Error al actualizar el contador de votos');
     }

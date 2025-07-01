@@ -58,7 +58,7 @@ const LoginPage = () => {
       toast.success('¡Inicio de sesión exitoso!');
       navigate('/');
     } catch (error) {
-      console.error('Error during login:', error);
+      console.error('Error al iniciar sesión:', error);
       toast.error(error.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);

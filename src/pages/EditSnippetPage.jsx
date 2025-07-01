@@ -50,7 +50,7 @@ const EditSnippetPage = () => {
         setLanguage(data.language);
         setIsPublic(data.is_public);
       } catch (error) {
-        console.error('Error fetching snippet:', error);
+        console.error('Error al cargar fragmento:', error);
         setError(error.message || 'Error al cargar el fragmento de código');
         toast.error(error.message || 'Error al cargar el fragmento de código');
       } finally {
@@ -124,7 +124,7 @@ const EditSnippetPage = () => {
       toast.success('¡Fragmento de código actualizado exitosamente!');
       navigate(`/snippet/${data.id}`);
     } catch (error) {
-      console.error('Error updating snippet:', error);
+      console.error('Error al actualizar fragmento:', error);
       toast.error(error.message || 'Error al actualizar el fragmento de código');
     } finally {
       setLoading(false);

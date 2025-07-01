@@ -188,7 +188,7 @@ const AIPage = () => {
           clearTimeout(connectionTimeoutRef.current);
         }
       } catch (error) {
-        console.error('Error initializing OpenAI client:', error);
+        console.error('Error al inicializar cliente OpenAI:', error);
         setConnectionStatus('error');
         setShowConnectionMessage(true);
         toast.error('Error al inicializar el cliente de IA');

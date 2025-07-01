@@ -28,7 +28,7 @@ const SnippetDetailPage = () => {
           user && checkIfFavorite(id)
         ]);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error al cargar datos:', error);
         setError('Error al cargar los datos');
         toast.error('Error al cargar los datos');
       }
@@ -53,7 +53,7 @@ const SnippetDetailPage = () => {
       if (error) throw error;
       setSnippet(data);
     } catch (error) {
-      console.error('Error fetching snippet:', error);
+      console.error('Error al obtener fragmento:', error);
       throw new Error('Error al cargar el fragmento de código');
     } finally {
       setLoading(false);
@@ -72,7 +72,7 @@ const SnippetDetailPage = () => {
       if (error) throw error;
       setIsFavorite(!!data);
     } catch (error) {
-      console.error('Error checking favorite status:', error);
+      console.error('Error al verificar estado de favorito:', error);
       throw error;
     }
   };
@@ -127,7 +127,7 @@ const SnippetDetailPage = () => {
         toast.success('Añadido a favoritos');
       }
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      console.error('Error al cambiar favorito:', error);
       toast.error('Error al actualizar favoritos');
     }
   };
@@ -164,7 +164,7 @@ const SnippetDetailPage = () => {
         toast.success('Fragmento de código eliminado exitosamente');
         navigate('/');
       } catch (error) {
-        console.error('Error deleting snippet:', error);
+        console.error('Error al eliminar fragmento:', error);
         toast.error('Error al eliminar el fragmento de código');
       }
     }

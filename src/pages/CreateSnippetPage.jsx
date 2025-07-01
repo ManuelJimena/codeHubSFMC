@@ -56,7 +56,7 @@ const CreateSnippetPage = () => {
     setLoading(true);
 
     try {
-      console.log('Creando snippet:', {
+      console.log('Creando fragmento:', {
         title: title.trim(),
         description: description.trim(),
         code: code.trim(),
@@ -74,7 +74,7 @@ const CreateSnippetPage = () => {
         attempts++;
         
         try {
-          console.log(`Intento ${attempts} de ${maxAttempts} para crear snippet`);
+          console.log(`Intento ${attempts} de ${maxAttempts} para crear fragmento`);
           
           const createSnippetPromise = supabase
             .from('snippets')
@@ -91,7 +91,7 @@ const CreateSnippetPage = () => {
 
           // Timeout más conservador de 15 segundos
           const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Timeout: La operación está tardando demasiado')), 15000);
+            setTimeout(() => reject(new Error('Tiempo de espera agotado: La operación está tardando demasiado')), 15000);
           });
 
           const { data, error } = await Promise.race([
@@ -108,7 +108,7 @@ const CreateSnippetPage = () => {
           }
 
           snippet = data;
-          console.log('Snippet creado exitosamente:', snippet);
+          console.log('Fragmento creado exitosamente:', snippet);
           break;
 
         } catch (attemptError) {
@@ -133,9 +133,9 @@ const CreateSnippetPage = () => {
       navigate(`/snippet/${snippet.id}`);
 
     } catch (error) {
-      console.error('Error creating snippet:', error);
+      console.error('Error al crear fragmento:', error);
       
-      if (error.message.includes('Timeout')) {
+      if (error.message.includes('Tiempo de espera agotado')) {
         toast.error('La operación está tardando demasiado. Por favor, intenta de nuevo.');
       } else if (error.message.includes('network')) {
         toast.error('Error de conexión. Verifica tu conexión a internet.');

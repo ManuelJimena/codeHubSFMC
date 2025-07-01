@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser);
       return currentUser;
     } catch (error) {
-      console.error('Error refreshing user:', error);
+      console.error('Error al refrescar usuario:', error);
       setUser(null);
       return null;
     }
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
           console.log('Inicialización de AuthContext completada');
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('Error al inicializar autenticación:', error);
 
         if (isMounted) {
           setUser(null);
@@ -73,7 +73,7 @@ export const AuthProvider = ({ children }) => {
     if (!initialized) return;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event);
+      console.log('Cambio de estado de autenticación:', event);
 
       switch (event) {
         case 'SIGNED_IN': {
@@ -132,7 +132,7 @@ export const AuthProvider = ({ children }) => {
       window.localStorage.clear();
       toast.success('Sesión cerrada correctamente');
     } catch (error) {
-      console.error('Error during sign out:', error);
+      console.error('Error al cerrar sesión:', error);
       toast.error('Error al cerrar sesión');
     }
   };

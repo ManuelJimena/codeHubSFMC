@@ -59,7 +59,7 @@ function SignupPage() {
         .single();
 
       if (profileError) {
-        console.error('Error creating profile:', profileError);
+        console.error('Error al crear perfil:', profileError);
         throw new Error('Error al crear el perfil');
       }
 
@@ -68,7 +68,7 @@ function SignupPage() {
       navigate('/');
 
     } catch (error) {
-      console.error('Error during signup:', error);
+      console.error('Error al registrarse:', error);
       toast.error(error.message || 'Error al crear la cuenta');
     } finally {
       setLoading(false);

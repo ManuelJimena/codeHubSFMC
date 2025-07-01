@@ -82,7 +82,7 @@ const UserSnippetsPage = () => {
     } catch (error) {
       // Solo mostrar error si no fue abortado
       if (error.name !== 'AbortError') {
-        console.error('Error fetching user snippets:', error);
+        console.error('Error al obtener fragmentos del usuario:', error);
         setError('Error al cargar los fragmentos de código');
         toast.error('Error al cargar los fragmentos de código');
       }
@@ -103,7 +103,7 @@ const UserSnippetsPage = () => {
       setSnippets(snippets.filter(s => s.id !== snippetId));
       toast.success('Fragmento eliminado correctamente');
     } catch (error) {
-      console.error('Error deleting snippet:', error);
+      console.error('Error al eliminar fragmento:', error);
       toast.error('Error al eliminar el fragmento');
     }
   };

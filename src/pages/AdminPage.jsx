@@ -54,7 +54,7 @@ const AdminPage = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching users:', error);
+      console.error('Error al obtener usuarios:', error);
       toast.error('Error al cargar los usuarios');
     } else {
       setUsers(data || []);
@@ -73,7 +73,7 @@ const AdminPage = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching snippets:', error);
+      console.error('Error al obtener fragmentos:', error);
       toast.error('Error al cargar los fragmentos');
     } else {
       setSnippets(data || []);
@@ -89,7 +89,7 @@ const AdminPage = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching API keys:', error);
+      console.error('Error al obtener claves API:', error);
       toast.error('Error al cargar las claves API');
     } else {
       setApiKeys(data || []);
@@ -105,7 +105,7 @@ const AdminPage = () => {
 
     if (error) {
       toast.error('Error al actualizar el usuario');
-      console.error('Error updating user:', error);
+      console.error('Error al actualizar usuario:', error);
     } else {
       toast.success('Usuario actualizado correctamente');
       fetchUsers();
@@ -121,7 +121,7 @@ const AdminPage = () => {
 
       if (error) {
         toast.error('Error al eliminar el fragmento');
-        console.error('Error deleting snippet:', error);
+        console.error('Error al eliminar fragmento:', error);
       } else {
         toast.success('Fragmento eliminado correctamente');
         fetchSnippets();
@@ -145,7 +145,7 @@ const AdminPage = () => {
       }]);
 
     if (error) {
-      console.error('Error adding API key:', error);
+      console.error('Error al añadir clave API:', error);
       toast.error('Error al añadir la clave API');
     } else {
       toast.success('Clave API añadida correctamente');
@@ -163,7 +163,7 @@ const AdminPage = () => {
         .eq('id', keyId);
 
       if (error) {
-        console.error('Error deleting API key:', error);
+        console.error('Error al eliminar clave API:', error);
         toast.error('Error al eliminar la clave API');
       } else {
         toast.success('Clave API eliminada correctamente');
