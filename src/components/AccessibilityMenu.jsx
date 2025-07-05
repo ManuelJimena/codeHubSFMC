@@ -278,7 +278,7 @@ const AccessibilityMenu = () => {
   return (
     <>
       {/* Estilos CSS para accesibilidad */}
-      <style jsx global>{`
+      <style>{`
         .accessibility-high-contrast {
           filter: contrast(150%) brightness(1.2);
         }
