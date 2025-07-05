@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, uploadAvatar, deleteAvatar } from '../lib/supabase';
-import { Upload, Save, User as UserIcon, KeyRound, ShieldCheck} from 'lucide-react';
+import { Upload, Save, User as UserIcon, KeyRound, ShieldCheck, Eye, EyeOff} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -13,6 +13,7 @@ const ProfilePage = () => {
   const [avatarUrl,  setAvatarUrl]  = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [saving,     setSaving]     = useState(false);
+  const [showAccessibilityMenu, setShowAccessibilityMenu] = useState(true);
 
   /* ---------- estado "cambiar contraseña" ------ */
   const [showPassForm,   setShowPassForm]   = useState(false);
@@ -28,10 +29,11 @@ const ProfilePage = () => {
     if (user) {
       setUsername(user.username);
       setAvatarUrl(user.avatar_url);
+      setShowAccessibilityMenu(user.show_accessibility_menu ?? true);
     } else {
       navigate('/login');
     }
-  }, [user, navigate]);   // ← el navigate evita warning de React
+  }, [user, navigate]);
 
   /* ---------------- cambiar avatar ------------- */
   const handleAvatarChange = (e) => {
@@ -82,7 +84,11 @@ const ProfilePage = () => {
 
       const { error } = await supabase
         .from('profiles')
-        .update({ username: trimmed, avatar_url: newAvatarUrl })
+        .update({ 
+          username: trimmed, 
+          avatar_url: newAvatarUrl,
+          show_accessibility_menu: showAccessibilityMenu
+        })
         .eq('id', user.id);
       if (error) throw error;
 
@@ -158,12 +164,12 @@ const ProfilePage = () => {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Tu perfil</h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          Actualiza tu información personal
+          Actualiza tu información personal y configuraciones
         </p>
       </div>
 
       {/* ---------- tarjeta PERFIL ---------- */}
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-8">
         <div className="flex flex-col md:flex-row">
           {/* Avatar ------------------------------------------------ */}
           <div className="md:w-1/3 mb-6 md:mb-0 flex flex-col items-center">
@@ -227,6 +233,33 @@ const ProfilePage = () => {
               />
             </div>
 
+            {/* Configuración de accesibilidad */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                Configuración de accesibilidad
+              </label>
+              <div className="flex items-center">
+                <input
+                  id="show-accessibility-menu"
+                  type="checkbox"
+                  checked={showAccessibilityMenu}
+                  onChange={(e) => setShowAccessibilityMenu(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 rounded"
+                />
+                <label htmlFor="show-accessibility-menu" className="ml-2 flex items-center text-sm text-gray-900 dark:text-gray-300">
+                  {showAccessibilityMenu ? (
+                    <Eye className="h-4 w-4 mr-1 text-green-500" />
+                  ) : (
+                    <EyeOff className="h-4 w-4 mr-1 text-gray-400" />
+                  )}
+                  Mostrar menú de accesibilidad flotante
+                </label>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                El menú flotante te permite ajustar opciones de accesibilidad como zoom, contraste y lectura de texto
+              </p>
+            </div>
+
             {/* Botones acción */}
             <div className="flex justify-between flex-wrap gap-4">
               <button
@@ -262,7 +295,7 @@ const ProfilePage = () => {
       {showPassForm && (
         <form
           onSubmit={handleChangePassword}
-          className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mt-8 space-y-6"
+          className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6"
         >
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
