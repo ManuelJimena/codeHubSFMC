@@ -230,31 +230,36 @@ var data = Platform.Function.InvokeRetrieve(prox);`;
                     Vista previa
                   </div>
                 </div>
-                <div className="rounded-lg overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <SyntaxHighlighter 
-                      language="javascript"
-                      style={atomOneDark}
-                      customStyle={{ 
-                        padding: '1rem',
-                        borderRadius: '0.5rem',
-                        fontSize: '0.75rem',
-                        backgroundColor: darkMode ? '#1a1a1a' : '#f8f9fa',
-                        margin: 0,
-                        minWidth: '300px'
-                      }}
-                      wrapLines={true}
-                      showLineNumbers={true}
-                      lineNumberStyle={{ 
-                        color: darkMode ? '#6b7280' : '#9ca3af',
-                        minWidth: '2em',
-                        paddingRight: '0.5em',
-                        textAlign: 'right',
-                        fontSize: '0.7rem'
-                      }}
-                    >
-                      {codeExample}
-                    </SyntaxHighlighter>
+                
+                {/* Contenedor responsive para el código */}
+                <div className="w-full overflow-hidden rounded-lg">
+                  <div className="w-full overflow-x-auto">
+                    <div className="min-w-0" style={{ minWidth: '280px' }}>
+                      <SyntaxHighlighter 
+                        language="javascript"
+                        style={atomOneDark}
+                        customStyle={{ 
+                          padding: window.innerWidth < 640 ? '0.75rem' : '1rem',
+                          borderRadius: '0.5rem',
+                          fontSize: window.innerWidth < 640 ? '0.7rem' : '0.75rem',
+                          backgroundColor: darkMode ? '#1a1a1a' : '#f8f9fa',
+                          margin: 0,
+                          width: '100%',
+                          maxWidth: '100%'
+                        }}
+                        wrapLines={false}
+                        showLineNumbers={true}
+                        lineNumberStyle={{ 
+                          color: darkMode ? '#6b7280' : '#9ca3af',
+                          minWidth: window.innerWidth < 640 ? '1.5em' : '2em',
+                          paddingRight: '0.5em',
+                          textAlign: 'right',
+                          fontSize: window.innerWidth < 640 ? '0.65rem' : '0.7rem'
+                        }}
+                      >
+                        {codeExample}
+                      </SyntaxHighlighter>
+                    </div>
                   </div>
                 </div>
               </div>
