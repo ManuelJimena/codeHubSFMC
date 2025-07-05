@@ -4,6 +4,7 @@ import AuthRedirectMiddleware from './components/AuthRedirectMiddleware';
 import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import AccessibilityMenu from './components/AccessibilityMenu';
 
 // Importación con lazy para mejor rendimiento y manejo de errores
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -58,6 +59,9 @@ function App() {
             </ErrorBoundary>
           </main>
           <Footer />
+          
+          {/* Componente de Accesibilidad */}
+          <AccessibilityMenu />
         </div>
       </Router>
     </ErrorBoundary>
