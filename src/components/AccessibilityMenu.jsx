@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
-  Accessibility, 
   Volume2, 
   Eye, 
   ZoomIn, 
@@ -13,10 +12,26 @@ import {
   Play
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
+
+// Icono oficial de accesibilidad (Universal Access Symbol)
+const AccessibilityIcon = ({ className = "w-6 h-6" }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    className={className}
+    role="img"
+    aria-label="Icono de accesibilidad"
+  >
+    <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 5.5C14.8 5.5 14.6 5.4 14.5 5.3L13.5 4.7C13.1 4.4 12.6 4.2 12 4.2S10.9 4.4 10.5 4.7L9.5 5.3C9.4 5.4 9.2 5.5 9 5.5L3 7V9L9 7.5V10.5C9 11.1 9.4 11.5 10 11.5S11 11.1 11 10.5V8.5L12 8.2L13 8.5V10.5C13 11.1 13.4 11.5 14 11.5S15 11.1 15 10.5V7.5L21 9ZM14 12.5C14 13.3 13.3 14 12.5 14H11.5C10.7 14 10 13.3 10 12.5V12H8V12.5C8 14.4 9.6 16 11.5 16H12.5C14.4 16 16 14.4 16 12.5V12H14V12.5ZM12 18C10.9 18 10 18.9 10 20S10.9 22 12 22S14 21.1 14 20S13.1 18 12 18Z"/>
+  </svg>
+);
 
 const AccessibilityMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showMenu, setShowMenu] = useState(true);
   const [settings, setSettings] = useState({
     textToSpeech: false,
     highContrast: false,
@@ -29,9 +44,64 @@ const AccessibilityMenu = () => {
   });
   
   const { darkMode } = useTheme();
+  const { user } = useAuth();
   const menuRef = useRef(null);
   const speechSynthesis = window.speechSynthesis;
   const [isReading, setIsReading] = useState(false);
+
+  // Cargar configuración del usuario
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      if (user) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('show_accessibility_menu')
+            .eq('id', user.id)
+            .single();
+
+          if (error) {
+            console.error('Error al cargar configuración de accesibilidad:', error);
+            return;
+          }
+
+          setShowMenu(data?.show_accessibility_menu ?? true);
+        } catch (error) {
+          console.error('Error al cargar configuración:', error);
+        }
+      }
+    };
+
+    loadUserSettings();
+  }, [user]);
+
+  // Actualizar configuración del usuario
+  const updateUserAccessibilitySettings = async (showAccessibilityMenu) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ show_accessibility_menu: showAccessibilityMenu })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error al actualizar configuración:', error);
+        toast.error('Error al guardar la configuración');
+        return;
+      }
+
+      setShowMenu(showAccessibilityMenu);
+      toast.success(
+        showAccessibilityMenu 
+          ? 'Menú de accesibilidad activado' 
+          : 'Menú de accesibilidad desactivado'
+      );
+    } catch (error) {
+      console.error('Error al actualizar configuración:', error);
+      toast.error('Error al guardar la configuración');
+    }
+  };
 
   // Cerrar menú al hacer clic fuera
   useEffect(() => {
@@ -275,6 +345,11 @@ const AccessibilityMenu = () => {
     return positions[position] || '';
   };
 
+  // No mostrar el menú si el usuario ha elegido ocultarlo
+  if (!showMenu) {
+    return null;
+  }
+
   return (
     <>
       {/* Estilos CSS para accesibilidad */}
@@ -318,7 +393,7 @@ const AccessibilityMenu = () => {
         role="region"
         aria-label="Menú de accesibilidad"
       >
-        {/* Botón principal */}
+        {/* Botón principal con icono oficial de accesibilidad */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`
@@ -333,7 +408,7 @@ const AccessibilityMenu = () => {
           aria-expanded={isOpen}
           aria-haspopup="true"
         >
-          <Accessibility className="w-6 h-6 mx-auto" />
+          <AccessibilityIcon className="w-6 h-6 mx-auto" />
         </button>
 
         {/* Menú radial */}
@@ -394,6 +469,34 @@ const AccessibilityMenu = () => {
       </div>
     </>
   );
+};
+
+// Exportar también el hook para usar en otras partes de la aplicación
+export const useAccessibilitySettings = () => {
+  const { user } = useAuth();
+
+  const updateAccessibilityMenuVisibility = async (visible) => {
+    if (!user) return false;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ show_accessibility_menu: visible })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error al actualizar configuración:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error al actualizar configuración:', error);
+      return false;
+    }
+  };
+
+  return { updateAccessibilityMenuVisibility };
 };
 
 export default AccessibilityMenu;
