@@ -26,16 +26,16 @@ const HomePage = () => {
     handleAuthRedirect();
   }, [navigate, location]);
 
-  const codeExample = `/* Ejemplo de SSJS */
-// Obtener datos de una Data Extension
-Platform.Load("Core", "1.1.1");
-var prox = Platform.Function.CreateObject("ProxyDE");
-Platform.Function.SetObjectProperty(prox, "Name", "MyDataExtension");
-var fields = Platform.Function.CreateObject("Fields");
-Platform.Function.AddObjectArrayItem(fields, "Field", "EmailAddress");
-Platform.Function.AddObjectArrayItem(fields, "Field", "FirstName");
-Platform.Function.SetObjectProperty(prox, "Fields", fields);
-var data = Platform.Function.InvokeRetrieve(prox);`;
+  const codeExample = `-- Consulta SQL para Marketing Cloud
+SELECT 
+  EmailAddress,
+  FirstName,
+  LastName,
+  SubscriberKey
+FROM Subscribers 
+WHERE Status = 'Active'
+  AND DateJoined >= DATEADD(DAY, -30, GETDATE())
+ORDER BY DateJoined DESC`;
 
   const features = [
     {
@@ -236,7 +236,7 @@ var data = Platform.Function.InvokeRetrieve(prox);`;
                   <div className="w-full overflow-x-auto">
                     <div className="min-w-0" style={{ minWidth: '280px' }}>
                       <SyntaxHighlighter 
-                        language="javascript"
+                        language="sql"
                         style={atomOneDark}
                         customStyle={{ 
                           padding: window.innerWidth < 640 ? '0.75rem' : '1rem',
