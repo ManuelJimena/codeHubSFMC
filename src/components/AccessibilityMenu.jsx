@@ -2,11 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { 
   Volume2, 
   Eye, 
-  ZoomIn, 
   Contrast, 
   Type, 
-  MousePointer, 
-  Focus,
   RotateCcw,
   Pause,
   Play
@@ -35,12 +32,8 @@ const AccessibilityMenu = () => {
   const [settings, setSettings] = useState({
     textToSpeech: false,
     highContrast: false,
-    zoom: 100,
     grayscale: false,
-    largeText: false,
-    focusIndicator: false,
-    reducedMotion: false,
-    pauseAnimations: false
+    largeText: false
   });
   
   const { darkMode } = useTheme();
@@ -119,13 +112,6 @@ const AccessibilityMenu = () => {
   useEffect(() => {
     const root = document.documentElement;
     
-    // Zoom
-    if (settings.zoom !== 100) {
-      root.style.fontSize = `${settings.zoom}%`;
-    } else {
-      root.style.fontSize = '';
-    }
-
     // Alto contraste
     if (settings.highContrast) {
       root.classList.add('accessibility-high-contrast');
@@ -145,27 +131,6 @@ const AccessibilityMenu = () => {
       root.classList.add('accessibility-large-text');
     } else {
       root.classList.remove('accessibility-large-text');
-    }
-
-    // Indicador de foco mejorado
-    if (settings.focusIndicator) {
-      root.classList.add('accessibility-focus-indicator');
-    } else {
-      root.classList.remove('accessibility-focus-indicator');
-    }
-
-    // Movimiento reducido
-    if (settings.reducedMotion) {
-      root.classList.add('accessibility-reduced-motion');
-    } else {
-      root.classList.remove('accessibility-reduced-motion');
-    }
-
-    // Pausar animaciones
-    if (settings.pauseAnimations) {
-      root.classList.add('accessibility-pause-animations');
-    } else {
-      root.classList.remove('accessibility-pause-animations');
     }
 
   }, [settings]);
@@ -210,12 +175,6 @@ const AccessibilityMenu = () => {
     toast.success(newValue ? 'Alto contraste activado' : 'Alto contraste desactivado');
   };
 
-  // Función para cambiar zoom
-  const changeZoom = (newZoom) => {
-    setSettings(prev => ({ ...prev, zoom: newZoom }));
-    toast.success(`Zoom ajustado al ${newZoom}%`);
-  };
-
   // Función para alternar escala de grises
   const toggleGrayscale = () => {
     const newValue = !settings.grayscale;
@@ -230,38 +189,13 @@ const AccessibilityMenu = () => {
     toast.success(newValue ? 'Texto grande activado' : 'Texto grande desactivado');
   };
 
-  // Función para alternar indicador de foco
-  const toggleFocusIndicator = () => {
-    const newValue = !settings.focusIndicator;
-    setSettings(prev => ({ ...prev, focusIndicator: newValue }));
-    toast.success(newValue ? 'Indicador de foco mejorado activado' : 'Indicador de foco normal');
-  };
-
-  // Función para alternar movimiento reducido
-  const toggleReducedMotion = () => {
-    const newValue = !settings.reducedMotion;
-    setSettings(prev => ({ ...prev, reducedMotion: newValue }));
-    toast.success(newValue ? 'Movimiento reducido activado' : 'Movimiento normal');
-  };
-
-  // Función para pausar/reanudar animaciones
-  const togglePauseAnimations = () => {
-    const newValue = !settings.pauseAnimations;
-    setSettings(prev => ({ ...prev, pauseAnimations: newValue }));
-    toast.success(newValue ? 'Animaciones pausadas' : 'Animaciones reanudadas');
-  };
-
   // Función para resetear todas las configuraciones
   const resetSettings = () => {
     setSettings({
       textToSpeech: false,
       highContrast: false,
-      zoom: 100,
       grayscale: false,
-      largeText: false,
-      focusIndicator: false,
-      reducedMotion: false,
-      pauseAnimations: false
+      largeText: false
     });
     
     if (speechSynthesis && isReading) {
@@ -278,55 +212,27 @@ const AccessibilityMenu = () => {
       label: isReading ? 'Pausar lectura' : 'Lector de texto',
       action: toggleTextToSpeech,
       active: settings.textToSpeech || isReading,
-      position: 'top-left'
+      position: 'top'
     },
     {
       icon: Contrast,
       label: 'Alto contraste',
       action: toggleHighContrast,
       active: settings.highContrast,
-      position: 'top'
-    },
-    {
-      icon: ZoomIn,
-      label: 'Zoom 120%',
-      action: () => changeZoom(settings.zoom === 120 ? 100 : 120),
-      active: settings.zoom === 120,
-      position: 'top-right'
+      position: 'right'
     },
     {
       icon: Eye,
       label: 'Escala de grises',
       action: toggleGrayscale,
       active: settings.grayscale,
-      position: 'right'
+      position: 'bottom'
     },
     {
       icon: Type,
       label: 'Texto grande',
       action: toggleLargeText,
       active: settings.largeText,
-      position: 'bottom-right'
-    },
-    {
-      icon: Focus,
-      label: 'Indicador de foco',
-      action: toggleFocusIndicator,
-      active: settings.focusIndicator,
-      position: 'bottom'
-    },
-    {
-      icon: MousePointer,
-      label: 'Movimiento reducido',
-      action: toggleReducedMotion,
-      active: settings.reducedMotion,
-      position: 'bottom-left'
-    },
-    {
-      icon: settings.pauseAnimations ? Play : Pause,
-      label: settings.pauseAnimations ? 'Reanudar animaciones' : 'Pausar animaciones',
-      action: togglePauseAnimations,
-      active: settings.pauseAnimations,
       position: 'left'
     }
   ];
@@ -334,13 +240,9 @@ const AccessibilityMenu = () => {
   const getPositionClasses = (position) => {
     const positions = {
       'top': '-top-16 left-1/2 -translate-x-1/2',
-      'top-right': '-top-12 -right-12',
       'right': 'top-1/2 -translate-y-1/2 -right-16',
-      'bottom-right': '-bottom-12 -right-12',
       'bottom': '-bottom-16 left-1/2 -translate-x-1/2',
-      'bottom-left': '-bottom-12 -left-12',
-      'left': 'top-1/2 -translate-y-1/2 -left-16',
-      'top-left': '-top-12 -left-12'
+      'left': 'top-1/2 -translate-y-1/2 -left-16'
     };
     return positions[position] || '';
   };
@@ -368,22 +270,6 @@ const AccessibilityMenu = () => {
         
         .accessibility-large-text * {
           font-size: inherit !important;
-        }
-        
-        .accessibility-focus-indicator *:focus {
-          outline: 3px solid #3b82f6 !important;
-          outline-offset: 2px !important;
-          box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3) !important;
-        }
-        
-        .accessibility-reduced-motion * {
-          animation-duration: 0.01ms !important;
-          animation-iteration-count: 1 !important;
-          transition-duration: 0.01ms !important;
-        }
-        
-        .accessibility-pause-animations * {
-          animation-play-state: paused !important;
         }
       `}</style>
 
