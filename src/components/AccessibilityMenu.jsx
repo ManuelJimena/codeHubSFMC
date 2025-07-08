@@ -16,7 +16,6 @@ import toast from 'react-hot-toast';
 const AccessibilityMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(true);
-  const [menuPosition, setMenuPosition] = useState('bottom-right'); // Nueva state para posición
   const [settings, setSettings] = useState({
     textToSpeech: false,
     highContrast: false,
@@ -55,51 +54,6 @@ const AccessibilityMenu = () => {
 
     loadUserSettings();
   }, [user]);
-
-  // Calcular posición óptima del menú
-  useEffect(() => {
-    const calculateOptimalPosition = () => {
-      if (!menuRef.current) return;
-
-      const rect = menuRef.current.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      
-      // Margen de seguridad para los iconos del menú radial
-      const safeMargin = 80;
-      
-      // Determinar la mejor posición basada en el espacio disponible
-      const spaceRight = viewportWidth - rect.right;
-      const spaceLeft = rect.left;
-      const spaceBottom = viewportHeight - rect.bottom;
-      const spaceTop = rect.top;
-      
-      let newPosition = 'bottom-right';
-      
-      // Lógica para determinar la mejor posición
-      if (spaceRight < safeMargin && spaceBottom < safeMargin) {
-        // Esquina inferior derecha - mover a superior izquierda
-        newPosition = 'top-left';
-      } else if (spaceRight < safeMargin) {
-        // Lado derecho - mover a izquierda
-        newPosition = spaceBottom < safeMargin ? 'top-left' : 'bottom-left';
-      } else if (spaceBottom < safeMargin) {
-        // Parte inferior - mover arriba
-        newPosition = spaceRight < safeMargin ? 'top-left' : 'top-right';
-      }
-      
-      setMenuPosition(newPosition);
-    };
-
-    // Calcular posición cuando se abre el menú
-    if (isOpen) {
-      calculateOptimalPosition();
-    }
-
-    // Recalcular en resize
-    window.addEventListener('resize', calculateOptimalPosition);
-    return () => window.removeEventListener('resize', calculateOptimalPosition);
-  }, [isOpen]);
 
   // Actualizar configuración del usuario
   const updateUserAccessibilitySettings = async (showAccessibilityMenu) => {
@@ -249,96 +203,51 @@ const AccessibilityMenu = () => {
     toast.success('Configuraciones de accesibilidad restablecidas');
   };
 
-  // Obtener clases de posición para el menú completo
-  const getMenuPositionClasses = () => {
-    const baseClasses = "fixed z-50";
-    
-    switch (menuPosition) {
-      case 'top-left':
-        return `${baseClasses} top-6 left-6`;
-      case 'top-right':
-        return `${baseClasses} top-6 right-6`;
-      case 'bottom-left':
-        return `${baseClasses} bottom-6 left-6`;
-      case 'bottom-right':
-      default:
-        return `${baseClasses} bottom-6 right-6`;
-    }
-  };
-
-  // Obtener posiciones de iconos basadas en la posición del menú
-  const getIconPositions = () => {
-    // Las posiciones se ajustan según donde esté ubicado el menú
-    switch (menuPosition) {
-      case 'top-left':
-        return {
-          textToSpeech: 'top-16 left-1/2 -translate-x-1/2',      // Abajo
-          highContrast: 'top-1/2 -translate-y-1/2 -right-16',   // Derecha
-          grayscale: '-bottom-16 left-1/2 -translate-x-1/2',    // Arriba (invertido)
-          largeText: 'top-1/2 -translate-y-1/2 -left-16'        // Izquierda
-        };
-      case 'top-right':
-        return {
-          textToSpeech: 'top-16 left-1/2 -translate-x-1/2',      // Abajo
-          highContrast: 'top-1/2 -translate-y-1/2 -left-16',     // Izquierda
-          grayscale: '-bottom-16 left-1/2 -translate-x-1/2',     // Arriba (invertido)
-          largeText: 'top-1/2 -translate-y-1/2 -right-16'        // Derecha
-        };
-      case 'bottom-left':
-        return {
-          textToSpeech: '-top-16 left-1/2 -translate-x-1/2',     // Arriba
-          highContrast: 'top-1/2 -translate-y-1/2 -right-16',    // Derecha
-          grayscale: 'top-16 left-1/2 -translate-x-1/2',         // Abajo (invertido)
-          largeText: 'top-1/2 -translate-y-1/2 -left-16'         // Izquierda
-        };
-      case 'bottom-right':
-      default:
-        return {
-          textToSpeech: '-top-16 left-1/2 -translate-x-1/2',     // Arriba
-          highContrast: 'top-1/2 -translate-y-1/2 -left-16',     // Izquierda
-          grayscale: 'top-16 left-1/2 -translate-x-1/2',         // Abajo (invertido)
-          largeText: 'top-1/2 -translate-y-1/2 -right-16'        // Derecha
-        };
-    }
-  };
-
   const menuItems = [
     {
       icon: isReading ? Pause : Volume2,
       label: isReading ? 'Pausar lectura' : 'Lector de texto',
       action: toggleTextToSpeech,
       active: settings.textToSpeech || isReading,
-      position: 'textToSpeech'
+      position: 'top'
     },
     {
       icon: Contrast,
       label: 'Alto contraste',
       action: toggleHighContrast,
       active: settings.highContrast,
-      position: 'highContrast'
+      position: 'right'
     },
     {
       icon: Eye,
       label: 'Escala de grises',
       action: toggleGrayscale,
       active: settings.grayscale,
-      position: 'grayscale'
+      position: 'bottom'
     },
     {
       icon: Type,
       label: 'Texto grande',
       action: toggleLargeText,
       active: settings.largeText,
-      position: 'largeText'
+      position: 'left'
     }
   ];
+
+  const getPositionClasses = (position) => {
+    const positions = {
+      'top': '-top-16 left-1/2 -translate-x-1/2',
+      'right': 'top-1/2 -translate-y-1/2 -right-16',
+      'bottom': '-bottom-16 left-1/2 -translate-x-1/2',
+      'left': 'top-1/2 -translate-y-1/2 -left-16'
+    };
+    return positions[position] || '';
+  };
 
   // No mostrar el menú si el usuario ha elegido ocultarlo
   if (!showMenu) {
     return null;
   }
-
-  const iconPositions = getIconPositions();
 
   return (
     <>
@@ -363,7 +272,9 @@ const AccessibilityMenu = () => {
 
       <div 
         ref={menuRef}
-        className={getMenuPositionClasses()}
+        className={`fixed bottom-6 right-6 z-50 transition-transform duration-300 ease-out ${
+          isOpen ? '-translate-x-4 -translate-y-4' : ''
+        }`}
         role="region"
         aria-label="Menú de accesibilidad"
       >
@@ -385,7 +296,7 @@ const AccessibilityMenu = () => {
           <PersonStanding className="w-6 h-6 mx-auto" />
         </button>
 
-        {/* Menú radial con posicionamiento inteligente */}
+        {/* Menú radial */}
         {isOpen && (
           <div className="absolute inset-0">
             {menuItems.map((item, index) => {
@@ -396,7 +307,7 @@ const AccessibilityMenu = () => {
                   onClick={item.action}
                   className={`
                     absolute w-12 h-12 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 group
-                    ${iconPositions[item.position]}
+                    ${getPositionClasses(item.position)}
                     ${item.active 
                       ? (darkMode ? 'bg-green-600 text-white' : 'bg-green-500 text-white')
                       : (darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-white hover:bg-gray-50 text-gray-700')
