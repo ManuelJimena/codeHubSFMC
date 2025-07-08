@@ -273,7 +273,7 @@ const AccessibilityMenu = () => {
       <div 
         ref={menuRef}
         className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 transition-transform duration-300 ease-out ${
-          isOpen ? '-translate-x-8 -translate-y-8 sm:-translate-x-12 sm:-translate-y-12' : ''
+          isOpen ? '-translate-x-14 -translate-y-14 sm:-translate-x-12 sm:-translate-y-12' : ''
         }`}
         role="region"
         aria-label="Menú de accesibilidad"
