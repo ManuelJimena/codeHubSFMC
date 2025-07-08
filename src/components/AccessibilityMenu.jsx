@@ -16,7 +16,6 @@ import toast from 'react-hot-toast';
 const AccessibilityMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(true);
-  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [settings, setSettings] = useState({
     textToSpeech: false,
     highContrast: false,
@@ -55,49 +54,6 @@ const AccessibilityMenu = () => {
 
     loadUserSettings();
   }, [user]);
-
-  // Calcular posición del menú para evitar que se salga de la pantalla
-  useEffect(() => {
-    if (isOpen && menuRef.current) {
-      const updatePosition = () => {
-        const rect = menuRef.current.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        
-        // Distancia desde los bordes para los iconos del menú radial
-        const menuRadius = 80; // Distancia aproximada de los iconos desde el centro
-        
-        let newX = rect.left + rect.width / 2;
-        let newY = rect.top + rect.height / 2;
-        
-        // Ajustar posición X si se sale por la derecha
-        if (newX + menuRadius > viewportWidth) {
-          newX = viewportWidth - menuRadius - 20;
-        }
-        
-        // Ajustar posición X si se sale por la izquierda
-        if (newX - menuRadius < 0) {
-          newX = menuRadius + 20;
-        }
-        
-        // Ajustar posición Y si se sale por abajo
-        if (newY + menuRadius > viewportHeight) {
-          newY = viewportHeight - menuRadius - 20;
-        }
-        
-        // Ajustar posición Y si se sale por arriba
-        if (newY - menuRadius < 0) {
-          newY = menuRadius + 20;
-        }
-        
-        setMenuPosition({ x: newX, y: newY });
-      };
-
-      updatePosition();
-      window.addEventListener('resize', updatePosition);
-      return () => window.removeEventListener('resize', updatePosition);
-    }
-  }, [isOpen]);
 
   // Actualizar configuración del usuario
   const updateUserAccessibilitySettings = async (showAccessibilityMenu) => {
@@ -166,7 +122,7 @@ const AccessibilityMenu = () => {
 
   }, [settings]);
 
-  // Función para leer texto en voz alta
+  // Función mejorada para leer texto en voz alta
   const toggleTextToSpeech = () => {
     if (!speechSynthesis) {
       toast.error('Tu navegador no soporta síntesis de voz');
@@ -182,11 +138,22 @@ const AccessibilityMenu = () => {
       setSettings(prev => ({ ...prev, textToSpeech: true }));
       setIsReading(true);
       
-      // Leer el contenido principal de la página
-      const mainContent = document.querySelector('main') || document.body;
-      const textContent = mainContent.innerText.slice(0, 500); // Limitar a 500 caracteres
+      // Obtener texto seleccionado o contenido de la página
+      const selection = window.getSelection();
+      let textToRead = '';
       
-      const utterance = new SpeechSynthesisUtterance(textContent);
+      if (selection && selection.toString().trim()) {
+        // Si hay texto seleccionado, leer solo eso
+        textToRead = selection.toString().trim();
+        toast.success('Leyendo texto seleccionado');
+      } else {
+        // Si no hay selección, leer el contenido principal
+        const mainContent = document.querySelector('main') || document.body;
+        textToRead = mainContent.innerText.slice(0, 500); // Limitar a 500 caracteres
+        toast.success('Leyendo contenido de la página');
+      }
+      
+      const utterance = new SpeechSynthesisUtterance(textToRead);
       utterance.lang = 'es-ES';
       utterance.rate = 0.8;
       utterance.onend = () => {
@@ -195,7 +162,6 @@ const AccessibilityMenu = () => {
       };
       
       speechSynthesis.speak(utterance);
-      toast.success('Iniciando lectura de texto');
     }
   };
 
@@ -237,6 +203,42 @@ const AccessibilityMenu = () => {
     toast.success('Configuraciones de accesibilidad restablecidas');
   };
 
+  // Calcular posición inteligente para evitar que se salga de la pantalla
+  const getSmartPosition = () => {
+    if (!menuRef.current) return {};
+    
+    const rect = menuRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Radio del menú (distancia de los iconos desde el centro)
+    const menuRadius = 70;
+    const safeMargin = 20;
+    
+    // Posición actual del botón
+    const buttonCenterX = rect.left + rect.width / 2;
+    const buttonCenterY = rect.top + rect.height / 2;
+    
+    // Verificar si hay espacio suficiente en cada dirección
+    const spaceRight = viewportWidth - buttonCenterX;
+    const spaceLeft = buttonCenterX;
+    const spaceBottom = viewportHeight - buttonCenterY;
+    const spaceTop = buttonCenterY;
+    
+    // Determinar si necesitamos ajustar la posición
+    const needsLeftShift = spaceRight < (menuRadius + safeMargin);
+    const needsRightShift = spaceLeft < (menuRadius + safeMargin);
+    const needsUpShift = spaceBottom < (menuRadius + safeMargin);
+    const needsDownShift = spaceTop < (menuRadius + safeMargin);
+    
+    return {
+      needsLeftShift,
+      needsRightShift,
+      needsUpShift,
+      needsDownShift
+    };
+  };
+
   const menuItems = [
     {
       icon: isReading ? Pause : Volume2,
@@ -269,12 +271,25 @@ const AccessibilityMenu = () => {
   ];
 
   const getPositionClasses = (position) => {
+    if (!isOpen) return 'opacity-0 scale-0';
+    
+    const smartPos = getSmartPosition();
+    
     const positions = {
-      'top': '-top-16 left-1/2 -translate-x-1/2',
-      'right': 'top-1/2 -translate-y-1/2 -right-16',
-      'bottom': '-bottom-16 left-1/2 -translate-x-1/2',
-      'left': 'top-1/2 -translate-y-1/2 -left-16'
+      'top': smartPos.needsDownShift 
+        ? 'top-16 left-1/2 -translate-x-1/2' 
+        : '-top-16 left-1/2 -translate-x-1/2',
+      'right': smartPos.needsLeftShift 
+        ? 'top-1/2 -translate-y-1/2 -left-16' 
+        : 'top-1/2 -translate-y-1/2 -right-16',
+      'bottom': smartPos.needsUpShift 
+        ? '-bottom-16 left-1/2 -translate-x-1/2' 
+        : 'top-16 left-1/2 -translate-x-1/2',
+      'left': smartPos.needsRightShift 
+        ? 'top-1/2 -translate-y-1/2 -right-16' 
+        : 'top-1/2 -translate-y-1/2 -left-16'
     };
+    
     return positions[position] || '';
   };
 
@@ -310,7 +325,7 @@ const AccessibilityMenu = () => {
         role="region"
         aria-label="Menú de accesibilidad"
       >
-        {/* Botón principal con icono oficial de accesibilidad */}
+        {/* Botón principal con icono PersonStanding */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`
@@ -328,7 +343,7 @@ const AccessibilityMenu = () => {
           <PersonStanding className="w-6 h-6 mx-auto" />
         </button>
 
-        {/* Menú radial */}
+        {/* Menú radial con posicionamiento inteligente */}
         {isOpen && (
           <div className="absolute inset-0">
             {menuItems.map((item, index) => {
@@ -367,6 +382,7 @@ const AccessibilityMenu = () => {
               className={`
                 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 group
                 ${darkMode ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}
+                ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
               `}
               aria-label="Restablecer configuraciones de accesibilidad"
               title="Restablecer todo"
