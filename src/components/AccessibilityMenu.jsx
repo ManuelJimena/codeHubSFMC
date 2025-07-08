@@ -6,31 +6,17 @@ import {
   Type, 
   RotateCcw,
   Pause,
-  Play
+  PersonStanding
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 
-// Icono oficial de accesibilidad (Universal Access Symbol)
-const AccessibilityIcon = ({ className = "w-6 h-6" }) => (
-  <svg 
-    viewBox="0 0 24 24" 
-    fill="currentColor" 
-    className={className}
-    role="img"
-    aria-label="Icono de accesibilidad"
-  >
-    <circle cx="12" cy="5" r="2"/>
-    <path d="M12 8c-1.5 0-3 .5-3 2v1h2v6c0 1.5 1.5 3 3 3s3-1.5 3-3v-6h2V10c0-1.5-1.5-2-3-2h-4z"/>
-    <path d="M7 10h2v2H7zm8 0h2v2h-2z"/>
-  </svg>
-);
-
 const AccessibilityMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(true);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [settings, setSettings] = useState({
     textToSpeech: false,
     highContrast: false,
@@ -69,6 +55,49 @@ const AccessibilityMenu = () => {
 
     loadUserSettings();
   }, [user]);
+
+  // Calcular posición del menú para evitar que se salga de la pantalla
+  useEffect(() => {
+    if (isOpen && menuRef.current) {
+      const updatePosition = () => {
+        const rect = menuRef.current.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Distancia desde los bordes para los iconos del menú radial
+        const menuRadius = 80; // Distancia aproximada de los iconos desde el centro
+        
+        let newX = rect.left + rect.width / 2;
+        let newY = rect.top + rect.height / 2;
+        
+        // Ajustar posición X si se sale por la derecha
+        if (newX + menuRadius > viewportWidth) {
+          newX = viewportWidth - menuRadius - 20;
+        }
+        
+        // Ajustar posición X si se sale por la izquierda
+        if (newX - menuRadius < 0) {
+          newX = menuRadius + 20;
+        }
+        
+        // Ajustar posición Y si se sale por abajo
+        if (newY + menuRadius > viewportHeight) {
+          newY = viewportHeight - menuRadius - 20;
+        }
+        
+        // Ajustar posición Y si se sale por arriba
+        if (newY - menuRadius < 0) {
+          newY = menuRadius + 20;
+        }
+        
+        setMenuPosition({ x: newX, y: newY });
+      };
+
+      updatePosition();
+      window.addEventListener('resize', updatePosition);
+      return () => window.removeEventListener('resize', updatePosition);
+    }
+  }, [isOpen]);
 
   // Actualizar configuración del usuario
   const updateUserAccessibilitySettings = async (showAccessibilityMenu) => {
@@ -296,7 +325,7 @@ const AccessibilityMenu = () => {
           aria-expanded={isOpen}
           aria-haspopup="true"
         >
-          <AccessibilityIcon className="w-6 h-6 mx-auto" />
+          <PersonStanding className="w-6 h-6 mx-auto" />
         </button>
 
         {/* Menú radial */}
