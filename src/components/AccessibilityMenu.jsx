@@ -16,6 +16,7 @@ import toast from 'react-hot-toast';
 const AccessibilityMenu = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(true);
+  const [menuPosition, setMenuPosition] = useState('bottom-right'); // Nueva state para posición
   const [settings, setSettings] = useState({
     textToSpeech: false,
     highContrast: false,
@@ -54,6 +55,51 @@ const AccessibilityMenu = () => {
 
     loadUserSettings();
   }, [user]);
+
+  // Calcular posición óptima del menú
+  useEffect(() => {
+    const calculateOptimalPosition = () => {
+      if (!menuRef.current) return;
+
+      const rect = menuRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Margen de seguridad para los iconos del menú radial
+      const safeMargin = 80;
+      
+      // Determinar la mejor posición basada en el espacio disponible
+      const spaceRight = viewportWidth - rect.right;
+      const spaceLeft = rect.left;
+      const spaceBottom = viewportHeight - rect.bottom;
+      const spaceTop = rect.top;
+      
+      let newPosition = 'bottom-right';
+      
+      // Lógica para determinar la mejor posición
+      if (spaceRight < safeMargin && spaceBottom < safeMargin) {
+        // Esquina inferior derecha - mover a superior izquierda
+        newPosition = 'top-left';
+      } else if (spaceRight < safeMargin) {
+        // Lado derecho - mover a izquierda
+        newPosition = spaceBottom < safeMargin ? 'top-left' : 'bottom-left';
+      } else if (spaceBottom < safeMargin) {
+        // Parte inferior - mover arriba
+        newPosition = spaceRight < safeMargin ? 'top-left' : 'top-right';
+      }
+      
+      setMenuPosition(newPosition);
+    };
+
+    // Calcular posición cuando se abre el menú
+    if (isOpen) {
+      calculateOptimalPosition();
+    }
+
+    // Recalcular en resize
+    window.addEventListener('resize', calculateOptimalPosition);
+    return () => window.removeEventListener('resize', calculateOptimalPosition);
+  }, [isOpen]);
 
   // Actualizar configuración del usuario
   const updateUserAccessibilitySettings = async (showAccessibilityMenu) => {
@@ -203,40 +249,57 @@ const AccessibilityMenu = () => {
     toast.success('Configuraciones de accesibilidad restablecidas');
   };
 
-  // Calcular posición inteligente para evitar que se salga de la pantalla
-  const getSmartPosition = () => {
-    if (!menuRef.current) return {};
+  // Obtener clases de posición para el menú completo
+  const getMenuPositionClasses = () => {
+    const baseClasses = "fixed z-50";
     
-    const rect = menuRef.current.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    // Radio del menú (distancia de los iconos desde el centro)
-    const menuRadius = 70;
-    const safeMargin = 20;
-    
-    // Posición actual del botón
-    const buttonCenterX = rect.left + rect.width / 2;
-    const buttonCenterY = rect.top + rect.height / 2;
-    
-    // Verificar si hay espacio suficiente en cada dirección
-    const spaceRight = viewportWidth - buttonCenterX;
-    const spaceLeft = buttonCenterX;
-    const spaceBottom = viewportHeight - buttonCenterY;
-    const spaceTop = buttonCenterY;
-    
-    // Determinar si necesitamos ajustar la posición
-    const needsLeftShift = spaceRight < (menuRadius + safeMargin);
-    const needsRightShift = spaceLeft < (menuRadius + safeMargin);
-    const needsUpShift = spaceBottom < (menuRadius + safeMargin);
-    const needsDownShift = spaceTop < (menuRadius + safeMargin);
-    
-    return {
-      needsLeftShift,
-      needsRightShift,
-      needsUpShift,
-      needsDownShift
-    };
+    switch (menuPosition) {
+      case 'top-left':
+        return `${baseClasses} top-6 left-6`;
+      case 'top-right':
+        return `${baseClasses} top-6 right-6`;
+      case 'bottom-left':
+        return `${baseClasses} bottom-6 left-6`;
+      case 'bottom-right':
+      default:
+        return `${baseClasses} bottom-6 right-6`;
+    }
+  };
+
+  // Obtener posiciones de iconos basadas en la posición del menú
+  const getIconPositions = () => {
+    // Las posiciones se ajustan según donde esté ubicado el menú
+    switch (menuPosition) {
+      case 'top-left':
+        return {
+          textToSpeech: 'top-16 left-1/2 -translate-x-1/2',      // Abajo
+          highContrast: 'top-1/2 -translate-y-1/2 -right-16',   // Derecha
+          grayscale: '-bottom-16 left-1/2 -translate-x-1/2',    // Arriba (invertido)
+          largeText: 'top-1/2 -translate-y-1/2 -left-16'        // Izquierda
+        };
+      case 'top-right':
+        return {
+          textToSpeech: 'top-16 left-1/2 -translate-x-1/2',      // Abajo
+          highContrast: 'top-1/2 -translate-y-1/2 -left-16',     // Izquierda
+          grayscale: '-bottom-16 left-1/2 -translate-x-1/2',     // Arriba (invertido)
+          largeText: 'top-1/2 -translate-y-1/2 -right-16'        // Derecha
+        };
+      case 'bottom-left':
+        return {
+          textToSpeech: '-top-16 left-1/2 -translate-x-1/2',     // Arriba
+          highContrast: 'top-1/2 -translate-y-1/2 -right-16',    // Derecha
+          grayscale: 'top-16 left-1/2 -translate-x-1/2',         // Abajo (invertido)
+          largeText: 'top-1/2 -translate-y-1/2 -left-16'         // Izquierda
+        };
+      case 'bottom-right':
+      default:
+        return {
+          textToSpeech: '-top-16 left-1/2 -translate-x-1/2',     // Arriba
+          highContrast: 'top-1/2 -translate-y-1/2 -left-16',     // Izquierda
+          grayscale: 'top-16 left-1/2 -translate-x-1/2',         // Abajo (invertido)
+          largeText: 'top-1/2 -translate-y-1/2 -right-16'        // Derecha
+        };
+    }
   };
 
   const menuItems = [
@@ -245,58 +308,37 @@ const AccessibilityMenu = () => {
       label: isReading ? 'Pausar lectura' : 'Lector de texto',
       action: toggleTextToSpeech,
       active: settings.textToSpeech || isReading,
-      position: 'top'
+      position: 'textToSpeech'
     },
     {
       icon: Contrast,
       label: 'Alto contraste',
       action: toggleHighContrast,
       active: settings.highContrast,
-      position: 'right'
+      position: 'highContrast'
     },
     {
       icon: Eye,
       label: 'Escala de grises',
       action: toggleGrayscale,
       active: settings.grayscale,
-      position: 'bottom'
+      position: 'grayscale'
     },
     {
       icon: Type,
       label: 'Texto grande',
       action: toggleLargeText,
       active: settings.largeText,
-      position: 'left'
+      position: 'largeText'
     }
   ];
-
-  const getPositionClasses = (position) => {
-    if (!isOpen) return 'opacity-0 scale-0';
-    
-    const smartPos = getSmartPosition();
-    
-    const positions = {
-      'top': smartPos.needsDownShift 
-        ? 'top-16 left-1/2 -translate-x-1/2' 
-        : '-top-16 left-1/2 -translate-x-1/2',
-      'right': smartPos.needsLeftShift 
-        ? 'top-1/2 -translate-y-1/2 -left-16' 
-        : 'top-1/2 -translate-y-1/2 -right-16',
-      'bottom': smartPos.needsUpShift 
-        ? '-bottom-16 left-1/2 -translate-x-1/2' 
-        : 'top-16 left-1/2 -translate-x-1/2',
-      'left': smartPos.needsRightShift 
-        ? 'top-1/2 -translate-y-1/2 -right-16' 
-        : 'top-1/2 -translate-y-1/2 -left-16'
-    };
-    
-    return positions[position] || '';
-  };
 
   // No mostrar el menú si el usuario ha elegido ocultarlo
   if (!showMenu) {
     return null;
   }
+
+  const iconPositions = getIconPositions();
 
   return (
     <>
@@ -321,7 +363,7 @@ const AccessibilityMenu = () => {
 
       <div 
         ref={menuRef}
-        className="fixed bottom-6 right-6 z-50"
+        className={getMenuPositionClasses()}
         role="region"
         aria-label="Menú de accesibilidad"
       >
@@ -354,7 +396,7 @@ const AccessibilityMenu = () => {
                   onClick={item.action}
                   className={`
                     absolute w-12 h-12 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 group
-                    ${getPositionClasses(item.position)}
+                    ${iconPositions[item.position]}
                     ${item.active 
                       ? (darkMode ? 'bg-green-600 text-white' : 'bg-green-500 text-white')
                       : (darkMode ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-white hover:bg-gray-50 text-gray-700')
@@ -382,7 +424,6 @@ const AccessibilityMenu = () => {
               className={`
                 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full shadow-lg transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 group
                 ${darkMode ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}
-                ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
               `}
               aria-label="Restablecer configuraciones de accesibilidad"
               title="Restablecer todo"
