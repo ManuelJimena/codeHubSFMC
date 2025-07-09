@@ -94,6 +94,15 @@ const ProfilePage = () => {
 
       await refreshUser();
       toast.success('Perfil actualizado');
+      
+      // Mostrar mensaje específico sobre el menú de accesibilidad
+      if (showAccessibilityMenu !== (user.show_accessibility_menu ?? true)) {
+        toast.success(
+          showAccessibilityMenu 
+            ? 'Menú de accesibilidad activado' 
+            : 'Menú de accesibilidad desactivado'
+        );
+      }
     } catch (err) {
       console.error(err);
       toast.error(err.message || 'Error al actualizar');

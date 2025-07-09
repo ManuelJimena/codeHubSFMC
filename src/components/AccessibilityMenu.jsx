@@ -72,11 +72,6 @@ const AccessibilityMenu = () => {
       }
 
       setShowMenu(showAccessibilityMenu);
-      toast.success(
-        showAccessibilityMenu 
-          ? 'Menú de accesibilidad activado' 
-          : 'Menú de accesibilidad desactivado'
-      );
     } catch (error) {
       console.error('Error al actualizar configuración:', error);
       toast.error('Error al guardar la configuración');
