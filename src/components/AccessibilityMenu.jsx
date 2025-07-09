@@ -311,7 +311,7 @@ const AccessibilityMenu = () => {
                   aria-label={item.label}
                   title={item.label}
                 >
-                  <Icon className="w-5 h-5 mx-auto" />
+                  <Icon className="w-6 h-6 mx-auto" />
                   
                   {/* Tooltip */}
                   <span className={`
@@ -334,7 +334,7 @@ const AccessibilityMenu = () => {
               aria-label="Restablecer configuraciones de accesibilidad"
               title="Restablecer todo"
             >
-              <RotateCcw className="w-4 h-4 mx-auto" />
+              <RotateCcw className="w-5 h-5 mx-auto" />
               
               {/* Tooltip */}
               <span className={`
