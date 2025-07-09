@@ -159,3 +159,24 @@ body {
 .focus-visible {
   @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
 }
+
+/* Estilos específicos para SyntaxHighlighter responsive */
+.text-xs pre {
+  font-size: 0.6rem !important;
+}
+
+.text-xs pre .linenumber {
+  font-size: 0.55rem !important;
+  min-width: 1.5em !important;
+}
+
+@media (min-width: 640px) {
+  .sm\:text-sm pre {
+    font-size: 0.8rem !important;
+  }
+  
+  .sm\:text-sm pre .linenumber {
+    font-size: 0.75rem !important;
+    min-width: 2em !important;
+  }
+}

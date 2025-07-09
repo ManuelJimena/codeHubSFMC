@@ -239,22 +239,21 @@ ORDER BY DateJoined DESC`;
                         language="sql"
                         style={atomOneDark}
                         customStyle={{ 
-                          padding: window.innerWidth < 640 ? '0.75rem' : '1rem',
+                          padding: '0.75rem',
                           borderRadius: '0.5rem',
-                          fontSize: window.innerWidth < 640 ? '0.6rem' : '0.8rem',
                           backgroundColor: darkMode ? '#1a1a1a' : '#f8f9fa',
                           margin: 0,
                           width: '100%',
                           maxWidth: '100%'
                         }}
+                        className="text-xs sm:text-sm"
                         wrapLines={false}
                         showLineNumbers={true}
                         lineNumberStyle={{ 
                           color: darkMode ? '#6b7280' : '#9ca3af',
-                          minWidth: window.innerWidth < 640 ? '1.5em' : '2em',
+                          minWidth: '1.5em',
                           paddingRight: '0.5em',
                           textAlign: 'right',
-                          fontSize: window.innerWidth < 640 ? '0.55rem' : '0.75rem'
                         }}
                       >
                         {codeExample}
