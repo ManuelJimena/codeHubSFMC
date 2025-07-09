@@ -45,6 +45,12 @@
 - ✅ Animaciones suaves
 - ✅ Feedback visual en tiempo real
 
+### ♿ **Accesibilidad Avanzada**
+- ✅ Menú flotante de accesibilidad
+- ✅ Lector de texto con síntesis de voz
+- ✅ Alto contraste y escala de grises
+- ✅ Texto grande configurable
+
 ### 🤖 **IA Integrada**
 - ✅ Asistente especializado en SFMC
 - ✅ Respuestas contextuales
@@ -156,6 +162,7 @@ src/
 ├── 📁 components/          # Componentes reutilizables
 │   ├── 🎴 CodeCard/       # Tarjeta de fragmento
 │   ├── 🧭 Navbar/         # Navegación
+│   ├── ♿ AccessibilityMenu/ # Menú de accesibilidad
 │   └── 🛡️ ErrorBoundary/  # Manejo de errores
 ├── 📁 context/            # Contextos de React
 │   ├── 🔐 AuthContext     # Gestión de autenticación
@@ -174,11 +181,11 @@ supabase/
 
 <div align="center">
 
-| 👨‍💻 **Desarrolladores** | 👥 **Equipos** | 🎓 **Aprendizaje** |
-|-------------------------|----------------|-------------------|
-| Guardar snippets útiles | Compartir conocimiento | Explorar ejemplos |
-| Organizar por proyecto | Colaborar en código | Aprender mejores prácticas |
-| Acceso desde cualquier lugar | Mantener estándares | Consultar con IA |
+| 👨‍💻 **Desarrolladores** | 👥 **Equipos** | 🎓 **Aprendizaje** | ♿ **Inclusión Digital** |
+|-------------------------|----------------|-------------------|------------------------|
+| Guardar snippets útiles | Compartir conocimiento | Explorar ejemplos | Acceso universal |
+| Organizar por proyecto | Colaborar en código | Aprender mejores prácticas | Herramientas adaptativas |
+| Acceso desde cualquier lugar | Mantener estándares | Consultar con IA | Experiencia personalizable |
 
 </div>
 
@@ -208,6 +215,15 @@ npm run lint:fix # 🔧 Arreglar errores de lint
 - Contexto específico de Salesforce Marketing Cloud
 - Respuestas formateadas con sintaxis
 - Streaming de respuestas en tiempo real
+
+### ♿ **Accesibilidad Avanzada**
+- **Menú flotante** con herramientas de accesibilidad
+- **Lector de texto** con síntesis de voz en español
+- **Alto contraste** para mejor visibilidad
+- **Escala de grises** para reducir fatiga visual
+- **Texto grande** con aumento global de fuente
+- **Configuración personalizable** por usuario
+- **Diseño inclusivo** siguiendo estándares WCAG
 
 ### 🛡️ **Seguridad Robusta**
 - Row Level Security (RLS) en Supabase
@@ -244,12 +260,19 @@ vercel
 - ⬆️ **ESLint 9.29.0**: Reglas actualizadas
 - 🔧 **OpenAI 5.6.0**: API mejorada para IA
 - 🎨 **React Router 7.6.2**: Navegación optimizada
+- ♿ **Menú de Accesibilidad**: Sistema completo de herramientas de accesibilidad
 
 ### **Mejoras de Rendimiento**
 - 🚀 **Lazy Loading**: Carga diferida de componentes
 - 📦 **Code Splitting**: División automática de código
 - 🎯 **Tree Shaking**: Eliminación de código no utilizado
 - 💾 **Caching**: Estrategias de caché mejoradas
+
+### **Nuevas Funcionalidades de Accesibilidad**
+- 🔊 **Síntesis de voz**: Lectura automática de contenido
+- 🎨 **Filtros visuales**: Alto contraste y escala de grises
+- 📝 **Escalado de texto**: Aumento global de fuente
+- ⚙️ **Configuración persistente**: Preferencias guardadas por usuario
 
 ## 🤝 Contribuir
 
@@ -267,6 +290,7 @@ vercel
 - Añade tests para nuevas características
 - Actualiza la documentación cuando sea necesario
 - Usa commits descriptivos
+- Considera la accesibilidad en nuevas funcionalidades
 
 ## 📊 Estadísticas del Proyecto
 
@@ -300,20 +324,22 @@ Este proyecto está licenciado bajo la **Licencia MIT** - ver el archivo [LICENS
 - [**Vercel**](https://vercel.com/) - Por el hosting y deployment
 - [**Tailwind CSS**](https://tailwindcss.com/) - Por el framework de estilos
 - **La comunidad open source** - Por hacer esto posible
+- **La comunidad de accesibilidad web** - Por los estándares y mejores prácticas
 
 ## 🔮 Roadmap
 
 ### **Q1 2025**
+- [x] ♿ **Menú de accesibilidad** con herramientas avanzadas
 - [ ] 📱 **App móvil** con React Native
 - [ ] 🔍 **Búsqueda semántica** con embeddings
 - [ ] 👥 **Colaboración en tiempo real**
-- [ ] 📊 **Analytics avanzados**
 
 ### **Q2 2025**
 - [ ] 🌐 **Internacionalización** (i18n)
 - [ ] 🎨 **Editor de código** integrado
 - [ ] 🔗 **Integración con GitHub**
 - [ ] 📚 **Sistema de documentación**
+- [ ] ♿ **Certificación WCAG 2.1 AA**
 
 ---
 
@@ -324,5 +350,7 @@ Este proyecto está licenciado bajo la **Licencia MIT** - ver el archivo [LICENS
 [🌐 **Visitar codeHubSFMC**](https://code-hub-sfmc.vercel.app)
 
 *Hecho con ❤️ para la comunidad de Salesforce Marketing Cloud*
+
+*Comprometidos con la inclusión digital y la accesibilidad web*
 
 </div>
