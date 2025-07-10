@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AuthProvider } from './context/AuthContext';
+import { AccessibilityProvider } from './context/AccessibilityProvider';
 import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
@@ -16,6 +17,7 @@ const renderApp = () => {
     root.render(
       <StrictMode>
         <AuthProvider>
+          <AccessibilityProvider>
           <ThemeProvider>
             <App />
             <Toaster 
@@ -29,6 +31,7 @@ const renderApp = () => {
               }}
             />
           </ThemeProvider>
+            </AccessibilityProvider>
         </AuthProvider>
       </StrictMode>
     );
