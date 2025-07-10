@@ -1,19 +1,31 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, uploadAvatar, deleteAvatar } from '../lib/supabase';
-import { Upload, Save, User as UserIcon, KeyRound, ShieldCheck, Eye, EyeOff} from 'lucide-react';
+import {
+  Upload,
+  Save,
+  User as UserIcon,
+  KeyRound,
+  ShieldCheck,
+  Eye,
+  EyeOff
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useAccessibility } from '../context/AccessibilityContext';
 import toast from 'react-hot-toast';
 
 const ProfilePage = () => {
   const { user, refreshUser } = useAuth();
+  const navigate = useNavigate();
+
+  /* ---------- acceso a preferencia de accesibilidad ---------- */
+  const { showMenu, setShowMenu } = useAccessibility();
 
   /* ---------- estado "info de perfil" ---------- */
   const [username,   setUsername]   = useState('');
   const [avatarUrl,  setAvatarUrl]  = useState(null);
   const [avatarFile, setAvatarFile] = useState(null);
   const [saving,     setSaving]     = useState(false);
-  const [showAccessibilityMenu, setShowAccessibilityMenu] = useState(true);
 
   /* ---------- estado "cambiar contraseña" ------ */
   const [showPassForm,   setShowPassForm]   = useState(false);
@@ -22,14 +34,11 @@ const ProfilePage = () => {
   const [confirmNewPass, setConfirmNewPass] = useState('');
   const [changingPass,   setChangingPass]   = useState(false);
 
-  const navigate = useNavigate();
-
   /* ---------- cargar usuario o redirigir ------- */
   useEffect(() => {
     if (user) {
       setUsername(user.username);
       setAvatarUrl(user.avatar_url);
-      setShowAccessibilityMenu(user.show_accessibility_menu ?? true);
     } else {
       navigate('/login');
     }
@@ -82,27 +91,18 @@ const ProfilePage = () => {
         newAvatarUrl = await uploadAvatar(avatarFile, user.id);
       }
 
+      // 🚫 Ya no enviamos show_accessibility_menu: se gestiona sólo en localStorage
       const { error } = await supabase
         .from('profiles')
-        .update({ 
-          username: trimmed, 
-          avatar_url: newAvatarUrl,
-          show_accessibility_menu: showAccessibilityMenu
+        .update({
+          username: trimmed,
+          avatar_url: newAvatarUrl
         })
         .eq('id', user.id);
       if (error) throw error;
 
       await refreshUser();
       toast.success('Perfil actualizado');
-      
-      // Mostrar mensaje específico sobre el menú de accesibilidad
-      if (showAccessibilityMenu !== (user.show_accessibility_menu ?? true)) {
-        toast.success(
-          showAccessibilityMenu 
-            ? 'Menú de accesibilidad activado' 
-            : 'Menú de accesibilidad desactivado'
-        );
-      }
     } catch (err) {
       console.error(err);
       toast.error(err.message || 'Error al actualizar');
@@ -114,7 +114,7 @@ const ProfilePage = () => {
   /* ----------- cambiar contraseña -------------- */
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    e.stopPropagation();  // por si el botón quedara dentro de otro <form>
+    e.stopPropagation();
 
     if (newPass.length < 6)         { toast.error('La nueva contraseña debe tener al menos 6 caracteres'); return; }
     if (newPass !== confirmNewPass) { toast.error('Las contraseñas no coinciden');                         return; }
@@ -251,12 +251,15 @@ const ProfilePage = () => {
                 <input
                   id="show-accessibility-menu"
                   type="checkbox"
-                  checked={showAccessibilityMenu}
-                  onChange={(e) => setShowAccessibilityMenu(e.target.checked)}
+                  checked={showMenu}
+                  onChange={(e) => setShowMenu(e.target.checked)}
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 rounded"
                 />
-                <label htmlFor="show-accessibility-menu" className="ml-2 flex items-center text-sm text-gray-900 dark:text-gray-300">
-                  {showAccessibilityMenu ? (
+                <label
+                  htmlFor="show-accessibility-menu"
+                  className="ml-2 flex items-center text-sm text-gray-900 dark:text-gray-300"
+                >
+                  {showMenu ? (
                     <Eye className="h-4 w-4 mr-1 text-green-500" />
                   ) : (
                     <EyeOff className="h-4 w-4 mr-1 text-gray-400" />
@@ -277,9 +280,24 @@ const ProfilePage = () => {
                 className="inline-flex items-center px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
               >
                 {saving ? (
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
                   </svg>
                 ) : (
                   <Save className="h-4 w-4 mr-2" />
@@ -351,9 +369,24 @@ const ProfilePage = () => {
             className="inline-flex items-center px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
           >
             {changingPass ? (
-              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              <svg
+                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
             ) : (
               <ShieldCheck className="h-4 w-4 mr-2" />
