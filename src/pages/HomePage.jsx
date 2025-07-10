@@ -27,15 +27,19 @@ const HomePage = () => {
   }, [navigate, location]);
 
   const codeExample = `-- Consulta SQL para Marketing Cloud
-SELECT 
-  EmailAddress,
-  FirstName,
-  LastName,
-  SubscriberKey
-FROM Subscribers 
-WHERE Status = 'Active'
-  AND DateJoined >= DATEADD(DAY, -30, GETDATE())
-ORDER BY DateJoined DESC`;
+SELECT EmailAddress, Total30d
+FROM Subscribers s
+JOIN (
+  SELECT SubscriberKey,
+         SUM(Amount) AS Total30d
+  FROM Orders
+  WHERE OrderDate >=
+        DATEADD(day,-30,GETDATE())
+  GROUP BY SubscriberKey
+) o ON s.SubscriberKey = o.SubscriberKey
+WHERE s.Status = 'Active'
+AND o.Total30d > 1000
+ORDER BY o.Total30d DESC`;
 
   const features = [
     {
