@@ -28,18 +28,17 @@ const HomePage = () => {
 
   const codeExample = `-- Consulta SQL para Marketing Cloud
 SELECT
-  s.EmailAddress
- ,SUM(o.Amount) AS Total30d
+  s.EmailAddress,
+  SUM(o.Amount) AS Total30d
 FROM
-  _Subscribers s
+  _Subscribers AS s
 JOIN
-  Orders o
-    ON s.SubscriberKey =
-       o.SubscriberKey
+  Orders AS o
+  ON s.SubscriberKey = o.SubscriberKey
 WHERE
   s.Status = 'Active'
   AND o.OrderDate >=
-      DATEADD(day,-30,GETDATE())
+    DATEADD(day,-30,GETDATE())
 GROUP BY
   s.EmailAddress
 HAVING
