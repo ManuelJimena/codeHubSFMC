@@ -28,27 +28,24 @@ const HomePage = () => {
 
   const codeExample = `-- Consulta SQL para Marketing Cloud
 SELECT
-  s.EmailAddress,
-  o.Total30d
+  s.EmailAddress
+ ,SUM(o.Amount) AS Total30d
 FROM
-  _Subscribers AS s
-JOIN (
-  SELECT
-    SubscriberKey,
-    SUM(Amount) AS Total30d
-  FROM
-    Orders
-  WHERE
-    OrderDate >= DATEADD(day,-30,GETDATE())
-  GROUP BY
-    SubscriberKey
-) AS o
-  ON s.SubscriberKey = o.SubscriberKey
+  _Subscribers s
+JOIN
+  Orders o
+    ON s.SubscriberKey =
+       o.SubscriberKey
 WHERE
   s.Status = 'Active'
-  AND o.Total30d > 1000
+  AND o.OrderDate >=
+      DATEADD(day,-30,GETDATE())
+GROUP BY
+  s.EmailAddress
+HAVING
+  SUM(o.Amount) > 1000
 ORDER BY
-  o.Total30d DESC`;
+  Total30d DESC`;
 
   const features = [
     {
