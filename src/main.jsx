@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AuthProvider } from './context/AuthContext';
-import { AccessibilityProvider } from './context/AccessibilityProvider';
+import { AccessibilityProvider } from './context/AccessibilityContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
@@ -13,33 +13,33 @@ console.log('Iniciando la aplicación...');
 const renderApp = () => {
   try {
     const root = createRoot(document.getElementById('root'));
-    
+
     root.render(
       <StrictMode>
         <AuthProvider>
           <AccessibilityProvider>
-          <ThemeProvider>
-            <App />
-            <Toaster 
-              position="top-right"
-              toastOptions={{
-                duration: 3000,
-                style: {
-                  background: '#333',
-                  color: '#fff',
-                },
-              }}
-            />
-          </ThemeProvider>
-            </AccessibilityProvider>
+            <ThemeProvider>
+              <App />
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 3000,
+                  style: {
+                    background: '#333',
+                    color: '#fff',
+                  },
+                }}
+              />
+            </ThemeProvider>
+          </AccessibilityProvider>
         </AuthProvider>
       </StrictMode>
     );
-    
+
     console.log('App renderizada correctamente');
   } catch (error) {
     console.error('Error al renderizar la aplicación:', error);
-    
+
     // Fallback UI en caso de error crítico
     document.body.innerHTML = `
       <div style="font-family: system-ui; padding: 2rem; text-align: center; max-width: 600px; margin: 0 auto;">
